@@ -1,0 +1,207 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  
+  body {
+    font-family: var(--font-sans);
+    overflow-x: hidden;
+    user-select: none;
+  }
+}
+
+/* HOTSPOT RIGID GEOMETRY FIX:
+   O motor Pannellum calcula a posição exata em 3D usando:
+   element.style.transform = translate(f[0]px, f[1]px) ...
+   onde f[0] e f[1] já consideram metade da largura e altura do elemento (offsetWidth/offsetHeight).
+   Para o hotspot ficar rigorosamente fixo na imagem sem flutuar ou derivar:
+   1. Deve ser position: absolute; top: 0; left: 0;
+   2. margin DEVE ser 0 (qualquer margin negativa causa deriva de paralaxe ao girar a câmera).
+   3. Nunca sobrescrever 'transform' em :hover ou em estados do elemento.
+*/
+
+/* Ocultar nome dos cômodos e bússola de dentro da imagem 360 */
+.pnlm-panorama-info,
+.pnlm-title-box,
+.pnlm-author-box,
+.pnlm-compass {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.pnlm-hotspot-base {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  z-index: 30 !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+.custom-hotspot-info {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 9999px !important;
+  background: rgba(14, 165, 233, 0.95) !important; /* sky-500 */
+  border: 2.5px solid #ffffff !important;
+  box-shadow: 0 4px 16px rgba(14, 165, 233, 0.7), 0 0 0 4px rgba(14, 165, 233, 0.25) !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  pointer-events: auto !important;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease !important;
+}
+
+.custom-hotspot-info::after {
+  content: "i" !important;
+  font-family: serif !important;
+  font-weight: 700 !important;
+  font-size: 22px !important;
+  color: #ffffff !important;
+  line-height: 1 !important;
+  pointer-events: none !important;
+  display: block !important;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.custom-hotspot-info:hover {
+  background: #0284c7 !important;
+  border-color: #f0f9ff !important;
+  box-shadow: 0 0 0 6px rgba(14, 165, 233, 0.45), 0 8px 24px rgba(14, 165, 233, 0.9) !important;
+}
+
+.custom-hotspot-info:hover::after {
+  transform: scale(1.22) !important;
+}
+
+.custom-hotspot-scene {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 9999px !important;
+  background: rgba(16, 185, 129, 0.95) !important; /* emerald-500 */
+  border: 2.5px solid #ffffff !important;
+  box-shadow: 0 4px 18px rgba(16, 185, 129, 0.7), 0 0 0 5px rgba(16, 185, 129, 0.3) !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  pointer-events: auto !important;
+  animation: pulse-ring 2.4s infinite !important;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease !important;
+}
+
+.custom-hotspot-scene::after {
+  content: "➔" !important;
+  font-size: 22px !important;
+  color: #ffffff !important;
+  line-height: 1 !important;
+  pointer-events: none !important;
+  display: block !important;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.custom-hotspot-scene:hover {
+  background: #059669 !important;
+  border-color: #ecfdf5 !important;
+  box-shadow: 0 0 0 7px rgba(16, 185, 129, 0.5), 0 8px 26px rgba(16, 185, 129, 0.95) !important;
+}
+
+.custom-hotspot-scene:hover::after {
+  transform: scale(1.22) !important;
+}
+
+/* Estado de Seleção / Reposicionamento */
+.hotspot-reposition-candidate {
+  outline: 3px dashed #fbbf24 !important;
+  outline-offset: 4px !important;
+  animation: candidate-pulse 1.4s infinite alternate !important;
+}
+
+.hotspot-reposition-selected {
+  outline: 4px solid #f59e0b !important;
+  outline-offset: 6px !important;
+  box-shadow: 0 0 0 10px rgba(245, 158, 11, 0.4), 0 0 30px rgba(245, 158, 11, 0.8) !important;
+}
+
+@keyframes candidate-pulse {
+  from {
+    outline-color: #fbbf24;
+    outline-offset: 3px;
+  }
+  to {
+    outline-color: #f59e0b;
+    outline-offset: 7px;
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.6), 0 0 0 0 rgba(16, 185, 129, 0.5);
+  }
+  70% {
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.6), 0 0 0 12px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.6), 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+/* Tooltip do Pannellum */
+div.pnlm-tooltip span {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  position: absolute !important;
+  bottom: calc(100% + 12px) !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  margin: 0 !important;
+  font-family: var(--font-sans) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  background-color: rgba(15, 23, 42, 0.95) !important;
+  color: #f8fafc !important;
+  border-radius: 8px !important;
+  padding: 6px 14px !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
+  letter-spacing: -0.01em !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  pointer-events: none !important;
+  white-space: nowrap !important;
+  z-index: 50 !important;
+  transition: opacity 0.2s ease, visibility 0.2s ease !important;
+}
+
+div.pnlm-tooltip:hover span {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.7);
+}

@@ -1,0 +1,6 @@
+{
+  "name": "EAD 360 Studio",
+  "description": "Crie experiências educacionais interativas em 360º para EAD com hotspots informativos e exportação HTML 100% offline.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

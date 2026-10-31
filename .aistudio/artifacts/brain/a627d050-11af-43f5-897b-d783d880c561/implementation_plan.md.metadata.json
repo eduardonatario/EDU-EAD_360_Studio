@@ -1,0 +1,6 @@
+{
+  "summary":  "Plano técnico de arquitetura e implementação para a plataforma de experiências educacionais interativas em 360º para EAD, cobrindo visualizador Pannellum local, banco de dados IndexedDB, sistema de coordenadas esféricas para hotspots, transição de cômodos, motor de exportação de HTML único offline com compressão inteligente, análise de riscos e fases de execução.",
+  "updatedAt":  "2026-10-31T03:17:17.375283746Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}
