@@ -8,12 +8,13 @@ import 'pannellum/build/pannellum.js';
 
 import { Crosshair, MapPin, Maximize, Minimize, Move, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
-import { Coords360, Hotspot, RepositionSession, Scene, ViewMode } from '../../types/tour';
+import { Coords360, GlobalHotspotSettings, Hotspot, RepositionSession, Scene, ViewMode } from '../../types/tour';
 
 interface PannellumViewerProps {
   scenes: Scene[];
   activeSceneId: string;
   viewMode: ViewMode;
+  settings?: GlobalHotspotSettings;
   isAddingNewHotspot: boolean;
   repositionSession: RepositionSession | null;
   onSelectHotspotForReposition: (hotspot: Hotspot) => void;
@@ -22,6 +23,7 @@ interface PannellumViewerProps {
   onCancelAction: () => void;
   onSelectInfoHotspot: (hotspot: Hotspot) => void;
   onNavigateScene: (sceneId: string) => void;
+  onUpdateHotspotCoords?: (sceneId: string, hotspotId: string, coords: Coords360) => void;
   selectedHotspotId?: string | null;
 }
 
@@ -29,6 +31,7 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
   scenes,
   activeSceneId,
   viewMode,
+  settings,
   isAddingNewHotspot,
   repositionSession,
   onSelectHotspotForReposition,
@@ -37,15 +40,32 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
   onCancelAction,
   onSelectInfoHotspot,
   onNavigateScene,
+  onUpdateHotspotCoords,
   selectedHotspotId,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<any>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [activeDragInfo, setActiveDragInfo] = useState<{
+    hotspotTitle: string;
+    isPortal: boolean;
+  } | null>(null);
+
+  const dragSessionRef = useRef<{
+    hotspotId: string;
+    sceneId: string;
+    startX: number;
+    startY: number;
+    hasMoved: boolean;
+    lastCoords: Coords360 | null;
+  } | null>(null);
 
   // Manter referências atualizadas aos callbacks
   const onNavigateSceneRef = useRef(onNavigateScene);
   onNavigateSceneRef.current = onNavigateScene;
+
+  const onUpdateHotspotCoordsRef = useRef(onUpdateHotspotCoords);
+  onUpdateHotspotCoordsRef.current = onUpdateHotspotCoords;
 
   const onSelectInfoHotspotRef = useRef(onSelectInfoHotspot);
   onSelectInfoHotspotRef.current = onSelectInfoHotspot;
@@ -71,6 +91,106 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
   const activeSceneIdRef = useRef(activeSceneId);
   activeSceneIdRef.current = activeSceneId;
 
+  const handleStartHotspotDrag = (hs: Hotspot, startEvent: MouseEvent) => {
+    dragSessionRef.current = {
+      hotspotId: hs.id,
+      sceneId: activeSceneIdRef.current,
+      startX: startEvent.clientX,
+      startY: startEvent.clientY,
+      hasMoved: false,
+      lastCoords: { pitch: hs.pitch, yaw: hs.yaw },
+    };
+
+    setActiveDragInfo({
+      hotspotTitle: hs.title || (hs.type === 'scene' ? 'Seta para novo cômodo' : 'Hotspot informativo'),
+      isPortal: hs.type === 'scene',
+    });
+
+    document.body.style.cursor = 'grabbing';
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const session = dragSessionRef.current;
+      if (!session || !viewerRef.current) return;
+
+      const delta = Math.hypot(e.clientX - session.startX, e.clientY - session.startY);
+      if (delta > 4) {
+        session.hasMoved = true;
+      }
+
+      if (session.hasMoved) {
+        try {
+          const coords = viewerRef.current.mouseEventToCoords(e);
+          if (coords && coords.length === 2) {
+            const pitch = Math.round(coords[0] * 10) / 10;
+            const yaw = Math.round(coords[1] * 10) / 10;
+            session.lastCoords = { pitch, yaw };
+
+            // Atualiza em tempo real as coordenadas do hotspot na instância ativa do Pannellum
+            const config = viewerRef.current.getConfig();
+            const pnlmHs = config?.hotSpots?.find((h: any) => h.id === session.hotspotId);
+            if (pnlmHs) {
+              pnlmHs.pitch = pitch;
+              pnlmHs.yaw = yaw;
+              viewerRef.current.lookAt(
+                viewerRef.current.getPitch(),
+                viewerRef.current.getYaw(),
+                viewerRef.current.getHfov(),
+                0
+              );
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+    };
+
+    const handleMouseUp = (e: MouseEvent) => {
+      window.removeEventListener('mousemove', handleMouseMove, true);
+      window.removeEventListener('mouseup', handleMouseUp, true);
+      document.body.style.cursor = '';
+      setActiveDragInfo(null);
+
+      const session = dragSessionRef.current;
+      dragSessionRef.current = null;
+
+      if (!session) return;
+
+      if (session.hasMoved && session.lastCoords) {
+        onUpdateHotspotCoordsRef.current?.(
+          session.sceneId,
+          session.hotspotId,
+          session.lastCoords
+        );
+      } else {
+        onSelectInfoHotspotRef.current(hs);
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove, true);
+    window.addEventListener('mouseup', handleMouseUp, true);
+  };
+
+  // Interceptar erros de corrida assíncrona do FileReader interno do Pannellum ao destruir/trocar de cena
+  useEffect(() => {
+    const handleGlobalError = (event: ErrorEvent) => {
+      if (
+        event.message &&
+        (event.message.includes("Cannot set properties of undefined (setting 'src')") ||
+          event.message.includes('FileReader'))
+      ) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        console.warn('Pannellum FileReader async cleanup tratado com segurança.');
+      }
+    };
+
+    window.addEventListener('error', handleGlobalError, true);
+    return () => {
+      window.removeEventListener('error', handleGlobalError, true);
+    };
+  }, []);
+
   // 1. Inicializar ou Reconfigurar o Visualizador Pannellum
   useEffect(() => {
     if (!containerRef.current) return;
@@ -82,6 +202,10 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
         console.warn('Erro ao destruir viewer antigo:', err);
       }
       viewerRef.current = null;
+    }
+
+    if (scenes.length === 0) {
+      return;
     }
 
     const pnlm = (window as any).pannellum;
@@ -115,6 +239,11 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
           }
 
           const baseClass = isInfo ? 'custom-hotspot-info' : 'custom-hotspot-scene';
+          const arrowClass =
+            hs.type === 'scene'
+              ? `arrow-${hs.arrowDirection || settings?.defaultArrowDirection || 'right'}`
+              : '';
+          const pulseClass = (settings?.pulseEffect ?? true) ? 'hotspot-pulse' : '';
 
           return {
             id: hs.id,
@@ -122,10 +251,43 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
             yaw: hs.yaw,
             type: hs.type,
             text: hs.title,
-            sceneId: hs.type === 'scene' ? hs.targetSceneId : undefined,
+            // Importante: No modo Configuração, sceneId DEVE ser undefined para impedir que o Pannellum mude de cômodo ao clicar
+            sceneId: viewMode === 'preview' && hs.type === 'scene' ? hs.targetSceneId : undefined,
             targetPitch: hs.targetPitch || 0,
             targetYaw: hs.targetYaw || 0,
-            cssClass: `${baseClass} ${stateClass}`,
+            cssClass: `${baseClass} ${stateClass} ${arrowClass} ${pulseClass}`.trim(),
+            createTooltipFunc: (hotSpotDiv: HTMLElement) => {
+              hotSpotDiv.setAttribute('data-hotspot-id', hs.id);
+              if (hs.title) {
+                const span = document.createElement('span');
+                span.textContent = hs.title;
+                hotSpotDiv.classList.add('pnlm-tooltip');
+                hotSpotDiv.appendChild(span);
+                span.style.width = span.scrollWidth - 20 + 'px';
+                span.style.marginLeft = -(span.scrollWidth - hotSpotDiv.offsetWidth) / 2 + 'px';
+                span.style.marginTop = -span.scrollHeight - 12 + 'px';
+              }
+
+              // Arrastar pontos para novos lugares diretamente no modo Configuração
+              hotSpotDiv.addEventListener('mousedown', (e: MouseEvent) => {
+                if (e.button !== 0) return;
+                if (viewModeRef.current !== 'editor') return;
+                if (repositionSessionRef.current !== null || isAddingNewHotspotRef.current) return;
+
+                e.stopPropagation();
+                e.preventDefault();
+                handleStartHotspotDrag(hs, e);
+              });
+
+              // No modo Configuração, clique direto na div nunca navega; seleciona para editar
+              hotSpotDiv.addEventListener('click', (e: MouseEvent) => {
+                if (viewModeRef.current === 'editor') {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onSelectInfoHotspotRef.current(hs);
+                }
+              });
+            },
             clickHandlerFunc: () => {
               // Se estiver no PASSO 1 da sessão de editar hotspot:
               if (repositionSessionRef.current?.step === 'select_hotspot') {
@@ -141,13 +303,14 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
                 return;
               }
 
-              // No modo Configuração: clicar em QUALQUER hotspot (portal ou info) seleciona para editar!
+              // No modo Configuração: clicar em QUALQUER seta ou hotspot apenas seleciona para editar/mover!
+              // NUNCA muda de cômodo no modo edição.
               if (viewModeRef.current === 'editor') {
                 onSelectInfoHotspotRef.current(hs);
                 return;
               }
 
-              // No modo Preview: se for portal, viaja entre cômodos; se for info, abre modal
+              // Apenas no modo Preview as setas navegam entre cômodos
               if (hs.type === 'scene' && hs.targetSceneId) {
                 onNavigateSceneRef.current(hs.targetSceneId);
               } else if (hs.type === 'info') {
@@ -163,7 +326,7 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
       const viewer = pnlm.viewer(containerRef.current, {
         default: {
           firstScene: activeSceneId,
-          sceneFadeDuration: 600,
+          sceneFadeDuration: 400,
           autoLoad: true,
           showControls: false,
           compass: false,
@@ -194,7 +357,25 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
         viewerRef.current = null;
       }
     };
-  }, [scenes, selectedHotspotId, repositionSession, viewMode]);
+  }, [scenes, settings]);
+
+  // Atualizar classes visuais de seleção/reposicionamento diretamente no DOM sem recriar o visualizador 3D
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const hotspotDivs = containerRef.current.querySelectorAll<HTMLElement>('[data-hotspot-id]');
+    hotspotDivs.forEach((div) => {
+      const id = div.getAttribute('data-hotspot-id');
+      const isSelected = id === selectedHotspotId;
+      const isTargetBeingRepositioned = repositionSession?.targetHotspotId === id;
+      const isRepositionCandidate = repositionSession?.step === 'select_hotspot';
+
+      div.classList.toggle('ring-4', isSelected);
+      div.classList.toggle('ring-amber-400', isSelected);
+      div.classList.toggle('ring-offset-2', isSelected);
+      div.classList.toggle('hotspot-reposition-selected', isTargetBeingRepositioned);
+      div.classList.toggle('hotspot-reposition-candidate', isRepositionCandidate && !isTargetBeingRepositioned);
+    });
+  }, [selectedHotspotId, repositionSession]);
 
   // 2. Alternar Cena sem recriar o Canvas
   useEffect(() => {
@@ -317,11 +498,34 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
   const isCrosshairActive =
     isAddingNewHotspot || repositionSession?.step === 'select_position';
 
+  if (scenes.length === 0) {
+    return (
+      <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center bg-slate-950 text-slate-300 select-none">
+        <div className="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-sky-400 mb-4 shadow-xl">
+          <MapPin className="w-8 h-8 opacity-90" />
+        </div>
+        <h3 className="text-base font-bold text-slate-100 mb-1.5">
+          Nenhum ambiente virtual cadastrado
+        </h3>
+        <p className="text-xs text-slate-400 max-w-sm mb-4 leading-relaxed">
+          Os cômodos de exemplo foram removidos. Crie seu primeiro cômodo no menu à esquerda clicando em &quot;Novo Cômodo&quot; para fazer upload de foto 360° ou colar a URL da imagem.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div
       className={`relative w-full h-full overflow-hidden select-none bg-slate-950 ${
         isCrosshairActive ? 'cursor-crosshair' : ''
       }`}
+      style={
+        {
+          '--info-hotspot-color': settings?.infoColor || '#0ea5e9',
+          '--scene-hotspot-color': settings?.sceneColor || '#10b981',
+          '--arrow-color': settings?.arrowColor || '#ffffff',
+        } as React.CSSProperties
+      }
     >
       <div ref={containerRef} className="w-full h-full" />
 
@@ -389,44 +593,59 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
         </div>
       )}
 
-      {/* Controles Flutuantes de Câmera */}
-      <div className="absolute bottom-6 right-6 z-30 flex flex-col gap-2.5 pointer-events-auto">
-        <button
-          type="button"
-          onClick={handleZoomIn}
-          title="Aproximar Zoom"
-          className="w-10 h-10 rounded-xl bg-slate-900/85 hover:bg-slate-800 text-white backdrop-blur-md border border-white/10 flex items-center justify-center shadow-lg transition-transform active:scale-95 cursor-pointer"
-        >
-          <ZoomIn className="w-4 h-4" />
-        </button>
+      {/* 4. BANNER DE ARRASTAR HOTSPOT EM TEMPO REAL */}
+      {activeDragInfo && (
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-40 bg-emerald-600 text-white px-5 py-2.5 rounded-xl shadow-2xl backdrop-blur-md flex items-center gap-2.5 border border-emerald-400 pointer-events-none animate-in fade-in">
+          <Move className="w-4 h-4 text-white animate-pulse" />
+          <div className="text-xs font-bold leading-tight">
+            <span>Arrastando: &quot;{activeDragInfo.hotspotTitle}&quot;</span>
+            <span className="block font-medium text-[10px] text-emerald-100 mt-0.5">
+              Mova o cursor para o novo local desejado e solte o mouse para fixar a posição.
+            </span>
+          </div>
+        </div>
+      )}
 
-        <button
-          type="button"
-          onClick={handleZoomOut}
-          title="Afastar Zoom"
-          className="w-10 h-10 rounded-xl bg-slate-900/85 hover:bg-slate-800 text-white backdrop-blur-md border border-white/10 flex items-center justify-center shadow-lg transition-transform active:scale-95 cursor-pointer"
-        >
-          <ZoomOut className="w-4 h-4" />
-        </button>
+      {/* 5. CONTROLES FLUTUANTES DE CÂMERA (ZOOM, CENTRALIZAR, TELA CHEIA) */}
+      {(settings?.showNavigationControls ?? true) && (
+        <div className="absolute bottom-6 right-6 z-30 flex flex-col gap-2.5 pointer-events-auto animate-in fade-in">
+          <button
+            type="button"
+            onClick={handleZoomIn}
+            title="Aproximar Zoom"
+            className="w-10 h-10 rounded-xl bg-slate-900/85 hover:bg-slate-800 text-white backdrop-blur-md border border-white/10 flex items-center justify-center shadow-lg transition-transform active:scale-95 cursor-pointer"
+          >
+            <ZoomIn className="w-4 h-4" />
+          </button>
 
-        <button
-          type="button"
-          onClick={handleResetCamera}
-          title="Centralizar Câmera"
-          className="w-10 h-10 rounded-xl bg-slate-900/85 hover:bg-slate-800 text-white backdrop-blur-md border border-white/10 flex items-center justify-center shadow-lg transition-transform active:scale-95 cursor-pointer"
-        >
-          <RotateCcw className="w-4 h-4" />
-        </button>
+          <button
+            type="button"
+            onClick={handleZoomOut}
+            title="Afastar Zoom"
+            className="w-10 h-10 rounded-xl bg-slate-900/85 hover:bg-slate-800 text-white backdrop-blur-md border border-white/10 flex items-center justify-center shadow-lg transition-transform active:scale-95 cursor-pointer"
+          >
+            <ZoomOut className="w-4 h-4" />
+          </button>
 
-        <button
-          type="button"
-          onClick={handleToggleFullscreen}
-          title={isFullscreen ? 'Sair da Tela Cheia' : 'Modo Tela Cheia'}
-          className="w-10 h-10 rounded-xl bg-slate-900/85 hover:bg-slate-800 text-white backdrop-blur-md border border-white/10 flex items-center justify-center shadow-lg transition-transform active:scale-95 cursor-pointer"
-        >
-          {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={handleResetCamera}
+            title="Centralizar Câmera"
+            className="w-10 h-10 rounded-xl bg-slate-900/85 hover:bg-slate-800 text-white backdrop-blur-md border border-white/10 flex items-center justify-center shadow-lg transition-transform active:scale-95 cursor-pointer"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </button>
+
+          <button
+            type="button"
+            onClick={handleToggleFullscreen}
+            title={isFullscreen ? 'Sair da Tela Cheia' : 'Modo Tela Cheia'}
+            className="w-10 h-10 rounded-xl bg-slate-900/85 hover:bg-slate-800 text-white backdrop-blur-md border border-white/10 flex items-center justify-center shadow-lg transition-transform active:scale-95 cursor-pointer"
+          >
+            {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

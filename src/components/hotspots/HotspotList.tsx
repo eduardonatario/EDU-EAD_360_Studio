@@ -117,7 +117,7 @@ export const HotspotList: React.FC<HotspotListProps> = ({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1">
                       <span className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate block">
-                        {hs.title || (isInfo ? 'Ponto Informativo' : 'Portal de Navegação')}
+                        {hs.title || (isInfo ? 'Hotspot informativo' : 'Seta para novo cômodo')}
                       </span>
                       <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                         <button
@@ -158,7 +158,7 @@ export const HotspotList: React.FC<HotspotListProps> = ({
 
                     <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5 flex-wrap">
                       <span className="font-medium text-slate-600 dark:text-slate-400">
-                        {isInfo ? 'Informativo' : `Destino: ${getDestinationName(hs.targetSceneId)}`}
+                        {isInfo ? 'Hotspot informativo' : `Destino: ${getDestinationName(hs.targetSceneId)}`}
                       </span>
                       <span aria-hidden="true" className="text-slate-400 dark:text-slate-600">·</span>
                       <span className="font-mono tabular-nums text-slate-500">

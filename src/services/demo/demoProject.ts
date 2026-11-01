@@ -7,7 +7,7 @@ import bathroomPano from '../../assets/images/modern_bathroom_spa_1793417469297.
 import bedroomPano from '../../assets/images/modern_bedroom_suite_1793417468751.jpg';
 import kitchenPano from '../../assets/images/modern_kitchen_gourmet_1793417468857.jpg';
 import livingPano from '../../assets/images/modern_living_room_1793417467833.jpg';
-import { TourProject } from '../../types/tour';
+import { DEFAULT_HOTSPOT_SETTINGS, TourProject } from '../../types/tour';
 import { generateEducationalCardImage } from './panoramaGenerator';
 
 export function createModernHouseDemoProject(): TourProject {
@@ -19,11 +19,12 @@ export function createModernHouseDemoProject(): TourProject {
 
   return {
     id: 'projeto-casa-moderna-ead-360-v2',
-    title: 'Crie imersão em ambiente em 360º',
-    author: 'Prof. Eduardo Natário',
-    institution: 'Faculdade de Arquitetura & Design Instrucional',
+    title: '',
+    author: '',
+    institution: '',
     description: 'Ambiente imersivo 360° para estudo de conceitos bioclimáticos, iluminação natural, circulação integrada e conforto espacial em habitações contemporâneas.',
     initialSceneId: 'sala-estar',
+    settings: { ...DEFAULT_HOTSPOT_SETTINGS },
     createdAt: Date.now(),
     updatedAt: Date.now(),
     scenes: [

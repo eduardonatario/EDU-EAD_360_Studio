@@ -16,7 +16,18 @@ import {
   X,
 } from 'lucide-react';
 import React, { useRef, useState } from 'react';
-import { Hotspot, HotspotType, Scene } from '../../types/tour';
+import { ArrowDirection, Hotspot, HotspotType, Scene } from '../../types/tour';
+
+const ARROW_OPTIONS: { id: ArrowDirection; label: string; glyph: string }[] = [
+  { id: 'right', label: 'Direita', glyph: '➔' },
+  { id: 'left', label: 'Esquerda', glyph: '⬅' },
+  { id: 'up', label: 'Cima', glyph: '⬆' },
+  { id: 'down', label: 'Baixo', glyph: '⬇' },
+  { id: 'up-right', label: 'Diag. Dir', glyph: '↗' },
+  { id: 'up-left', label: 'Diag. Esq', glyph: '↖' },
+  { id: 'compass', label: 'Bússola', glyph: '🧭' },
+  { id: 'door', label: 'Porta', glyph: '🚪' },
+];
 
 interface HotspotEditorProps {
   hotspot: Hotspot;
@@ -50,6 +61,25 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
   );
   const [pitch, setPitch] = useState(hotspot.pitch);
   const [yaw, setYaw] = useState(hotspot.yaw);
+  const [arrowDirection, setArrowDirection] = useState<ArrowDirection>(
+    hotspot.arrowDirection || 'right'
+  );
+  const [customColor, setCustomColor] = useState(hotspot.customColor || '');
+  const [arrowColor, setArrowColor] = useState(hotspot.arrowColor || '');
+
+  // Sincronizar campos sempre que o hotspot for reposicionado, arrastado ou trocado
+  React.useEffect(() => {
+    setType(hotspot.type);
+    setTitle(hotspot.title || '');
+    setDescription(hotspot.description || '');
+    setImageUrl(hotspot.imageUrl || '');
+    setTargetSceneId(hotspot.targetSceneId || allScenes.find((s) => s.id !== currentSceneId)?.id || '');
+    setPitch(hotspot.pitch);
+    setYaw(hotspot.yaw);
+    setArrowDirection(hotspot.arrowDirection || 'right');
+    setCustomColor(hotspot.customColor || '');
+    setArrowColor(hotspot.arrowColor || '');
+  }, [hotspot, currentSceneId, allScenes]);
 
   // Controle de modo de inserção de imagem: 'upload' ou 'url'
   const [imageTab, setImageTab] = useState<'upload' | 'url'>('upload');
@@ -87,20 +117,22 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
     const updated: Hotspot = {
       ...hotspot,
       type,
-      title: title.trim() || (type === 'info' ? 'Ponto Informativo' : 'Portal de Cômodo'),
+      title: title.trim() || (type === 'info' ? 'Hotspot informativo' : 'Seta para novo cômodo'),
       pitch: Number(pitch) || 0,
       yaw: Number(yaw) || 0,
       description: type === 'info' ? description : undefined,
       imageUrl: type === 'info' ? imageUrl : undefined,
+      customColor: customColor || undefined,
       targetSceneId: type === 'scene' ? targetSceneId : undefined,
       targetPitch: type === 'scene' ? 0 : undefined,
       targetYaw: type === 'scene' ? 0 : undefined,
+      arrowDirection: type === 'scene' ? arrowDirection : undefined,
+      arrowColor: type === 'scene' && arrowColor ? arrowColor : undefined,
     };
     onSave(updated);
   };
 
   const destinationOptions = allScenes.filter((s) => s.id !== currentSceneId);
-  const selectedDestinationScene = allScenes.find((s) => s.id === targetSceneId);
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 w-84 shrink-0 select-none text-slate-800 dark:text-slate-200 shadow-lg transition-colors">
@@ -121,7 +153,7 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
               Editar Hotspot
             </h2>
             <span className="text-[10px] text-slate-500 dark:text-slate-400 block -mt-0.5">
-              {type === 'info' ? 'Ponto Informativo' : 'Portal de Navegação'}
+              {type === 'info' ? 'Hotspot informativo' : 'Seta para novo cômodo'}
             </span>
           </div>
         </div>
@@ -153,7 +185,7 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
               }`}
             >
               <Info className="w-3.5 h-3.5" />
-              <span>Informativo</span>
+              <span>Hotspot informativo</span>
             </button>
             <button
               type="button"
@@ -165,7 +197,7 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
               }`}
             >
               <Navigation className="w-3.5 h-3.5" />
-              <span>Portal de Cômodo</span>
+              <span>Seta para novo cômodo</span>
             </button>
           </div>
         </div>
@@ -173,7 +205,7 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
         {/* Título do Hotspot */}
         <div>
           <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-            {type === 'info' ? 'Título do Ponto de Estudo' : 'Nome do Portal de Destino'}
+            {type === 'info' ? 'Título do Ponto de Estudo' : 'Nome da Seta de Navegação'}
           </label>
           <input
             type="text"
@@ -185,7 +217,7 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
           />
         </div>
 
-        {/* Campos Específicos para PORTAL DE NAVEGAÇÃO ENTRE CÔMODOS */}
+        {/* Campos Específicos para SETA PARA NOVO CÔMODO */}
         {type === 'scene' && (
           <div className="space-y-3 p-3 bg-emerald-500/5 dark:bg-emerald-950/20 rounded-xl border border-emerald-500/20">
             <div>
@@ -210,7 +242,7 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
                     setTargetSceneId(newTargetId);
                     // Se o título estiver vazio ou padrão, sugere o nome do cômodo
                     const targetScene = allScenes.find((s) => s.id === newTargetId);
-                    if (targetScene && (!title || title.startsWith('Ir para') || title === 'Portal de Cômodo')) {
+                    if (targetScene && (!title || title.startsWith('Ir para') || title === 'Seta para novo cômodo' || title === 'Portal de Cômodo')) {
                       setTitle(`Ir para ${targetScene.name}`);
                     }
                   }}
@@ -225,19 +257,44 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
               )}
             </div>
 
-            {selectedDestinationScene && (
-              <div className="text-[11px] text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500 dark:text-slate-400">Ambiente conectado:</span>
-                  <span className="font-semibold text-emerald-700 dark:text-emerald-300">
-                    {selectedDestinationScene.name}
-                  </span>
+            {/* Escolha da Seta de Navegação deste Portal */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-[11px] font-semibold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider">
+                  Seta de Navegação
+                </label>
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-slate-500">Cor da seta:</span>
+                  <input
+                    type="color"
+                    value={arrowColor || '#ffffff'}
+                    onChange={(e) => setArrowColor(e.target.value)}
+                    className="w-4 h-4 rounded cursor-pointer border border-slate-300 dark:border-slate-700 bg-transparent p-0"
+                    title="Cor da seta"
+                  />
                 </div>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-2">
-                  {selectedDestinationScene.description || 'Ambiente panorâmico 360°'}
-                </p>
               </div>
-            )}
+              <div className="grid grid-cols-4 gap-1">
+                {ARROW_OPTIONS.map((dir) => {
+                  const isSelected = arrowDirection === dir.id;
+                  return (
+                    <button
+                      key={dir.id}
+                      type="button"
+                      onClick={() => setArrowDirection(dir.id)}
+                      className={`p-1.5 rounded-lg flex flex-col items-center justify-center transition-all cursor-pointer border ${
+                        isSelected
+                          ? 'bg-emerald-600 text-white font-bold border-emerald-500 shadow-xs'
+                          : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+                      }`}
+                    >
+                      <span className="text-sm leading-none">{dir.glyph}</span>
+                      <span className="text-[9px] mt-0.5 truncate">{dir.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
             {targetSceneId && onNavigateToScene && (
               <button
@@ -246,7 +303,7 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
                 className="w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
               >
                 <Navigation className="w-3.5 h-3.5" />
-                <span>Testar viagem / Ir para este cômodo agora ➔</span>
+                <span>Testar mudança de cômodo ➔</span>
               </button>
             )}
           </div>
@@ -411,7 +468,7 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
         <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2.5">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Posição no Espaço 360°
+              Orientação espacial
             </span>
             <button
               type="button"
@@ -427,7 +484,7 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
           <div className="grid grid-cols-2 gap-2">
             <div>
               <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-1">
-                Pitch (Vertical: -90° a 90°)
+                Vertical:-90º a 90º
               </span>
               <input
                 type="number"
@@ -441,7 +498,7 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
             </div>
             <div>
               <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-1">
-                Yaw (Horizontal: -180° a 180°)
+                Horizontal -180º a 180º
               </span>
               <input
                 type="number"

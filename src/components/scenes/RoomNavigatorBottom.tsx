@@ -10,12 +10,14 @@ interface RoomNavigatorBottomProps {
   scenes: Scene[];
   activeSceneId: string;
   onSelectScene: (sceneId: string) => void;
+  showHotspotCount?: boolean;
 }
 
 export const RoomNavigatorBottom: React.FC<RoomNavigatorBottomProps> = ({
   scenes,
   activeSceneId,
   onSelectScene,
+  showHotspotCount = false,
 }) => {
   return (
     <nav
@@ -36,13 +38,15 @@ export const RoomNavigatorBottom: React.FC<RoomNavigatorBottomProps> = ({
             }`}
           >
             <span>{scene.name}</span>
-            <span
-              className={`text-[10px] font-mono tabular-nums ${
-                isActive ? 'text-sky-200' : 'text-slate-500'
-              }`}
-            >
-              ({scene.hotspots.length})
-            </span>
+            {showHotspotCount && (
+              <span
+                className={`text-[10px] font-mono tabular-nums ${
+                  isActive ? 'text-sky-200' : 'text-slate-500'
+                }`}
+              >
+                ({scene.hotspots.length})
+              </span>
+            )}
           </button>
         );
       })}

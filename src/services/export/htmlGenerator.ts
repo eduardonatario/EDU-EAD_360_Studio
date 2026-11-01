@@ -22,14 +22,18 @@ export async function generateStandaloneHTML(
   // 2. Serializar dados do tour
   const serializedProject = JSON.stringify(optimized);
 
+  const displayTitle = (project.title && !/^(tour\s*virtual\s*360[º°]?|crie\s*imers[aã]o.*)$/i.test(project.title.trim()))
+    ? `${escapeHtml(project.title)} - Experiência 360° EAD`
+    : 'Experiência 360° EAD';
+
   // 3. Montar o documento completo
   const htmlContent = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>${escapeHtml(project.title)} - Experiência 360° EAD</title>
-  <meta name="description" content="${escapeHtml(project.description)}">
+  <title>${displayTitle}</title>
+  <meta name="description" content="${escapeHtml(project.description || 'Ambiente panorâmico imersivo 360°')}">
   
   <style>
     /* Reset & Base */
@@ -46,6 +50,12 @@ export async function generateStandaloneHTML(
       background: #090d16;
       color: #f8fafc;
       user-select: none;
+    }
+
+    :root {
+      --info-hotspot-color: ${project.settings?.infoColor || '#0ea5e9'};
+      --scene-hotspot-color: ${project.settings?.sceneColor || '#10b981'};
+      --arrow-color: ${project.settings?.arrowColor || '#ffffff'};
     }
 
     /* Pannellum Embedded CSS */
@@ -77,9 +87,9 @@ export async function generateStandaloneHTML(
       width: 44px !important;
       height: 44px !important;
       border-radius: 9999px !important;
-      background: rgba(14, 165, 233, 0.95) !important;
+      background: var(--info-hotspot-color, #0ea5e9) !important;
       border: 2.5px solid #ffffff !important;
-      box-shadow: 0 4px 16px rgba(14, 165, 233, 0.7), 0 0 0 4px rgba(14, 165, 233, 0.25) !important;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 0 3px rgba(255, 255, 255, 0.25) !important;
       cursor: pointer !important;
       display: flex !important;
       align-items: center !important;
@@ -88,7 +98,7 @@ export async function generateStandaloneHTML(
       box-sizing: border-box !important;
       z-index: 30 !important;
       pointer-events: auto !important;
-      transition: background-color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease !important;
+      transition: background-color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, filter 0.2s ease !important;
     }
     .custom-hotspot-info::after {
       content: "i";
@@ -102,9 +112,9 @@ export async function generateStandaloneHTML(
       transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .custom-hotspot-info:hover {
-      background: #0284c7 !important;
+      filter: brightness(1.15) !important;
       border-color: #f0f9ff !important;
-      box-shadow: 0 0 0 6px rgba(14, 165, 233, 0.45), 0 8px 24px rgba(14, 165, 233, 0.9) !important;
+      box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.35), 0 8px 24px rgba(0, 0, 0, 0.5) !important;
     }
     .custom-hotspot-info:hover::after {
       transform: scale(1.22);
@@ -114,9 +124,9 @@ export async function generateStandaloneHTML(
       width: 48px !important;
       height: 48px !important;
       border-radius: 9999px !important;
-      background: rgba(16, 185, 129, 0.95) !important;
+      background: var(--scene-hotspot-color, #10b981) !important;
       border: 2.5px solid #ffffff !important;
-      box-shadow: 0 4px 18px rgba(16, 185, 129, 0.7), 0 0 0 5px rgba(16, 185, 129, 0.3) !important;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35), 0 0 0 4px rgba(255, 255, 255, 0.25) !important;
       cursor: pointer !important;
       display: flex !important;
       align-items: center !important;
@@ -125,19 +135,53 @@ export async function generateStandaloneHTML(
       box-sizing: border-box !important;
       z-index: 30 !important;
       pointer-events: auto !important;
-      animation: pulse-ring-export 2.4s infinite !important;
-      transition: background-color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease !important;
+      transition: background-color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, filter 0.2s ease !important;
     }
     .custom-hotspot-scene::after {
       content: "➔";
       font-size: 22px;
-      color: #ffffff;
+      color: var(--arrow-color, #ffffff) !important;
       line-height: 1;
       pointer-events: none;
       display: block;
       transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
+
+    /* Variações de direção de seta */
+    .arrow-right::after { content: "➔" !important; }
+    .arrow-left::after { content: "⬅" !important; }
+    .arrow-up::after { content: "⬆" !important; }
+    .arrow-down::after { content: "⬇" !important; }
+    .arrow-up-right::after { content: "↗" !important; }
+    .arrow-up-left::after { content: "↖" !important; }
+    .arrow-compass::after { content: "🧭" !important; font-size: 20px !important; }
+    .arrow-door::after { content: "🚪" !important; font-size: 20px !important; }
+
+    /* Efeito de piscar / pulsar suavemente */
+    .hotspot-pulse {
+      animation: gentle-glow 2.2s infinite ease-in-out !important;
+    }
+
+    @keyframes gentle-glow {
+      0% {
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 0 0 0 rgba(255, 255, 255, 0.55);
+        filter: brightness(1);
+      }
+      50% {
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45), 0 0 0 9px rgba(255, 255, 255, 0);
+        filter: brightness(1.2);
+      }
+      100% {
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 0 0 0 rgba(255, 255, 255, 0);
+        filter: brightness(1);
+      }
+    }
+
     .custom-hotspot-scene:hover {
+      filter: brightness(1.15) !important;
+      border-color: #ecfdf5 !important;
+      box-shadow: 0 0 0 7px rgba(255, 255, 255, 0.4), 0 8px 26px rgba(0, 0, 0, 0.55) !important;
+    }
       background: #059669 !important;
       border-color: #ecfdf5 !important;
       box-shadow: 0 0 0 7px rgba(16, 185, 129, 0.5), 0 8px 26px rgba(16, 185, 129, 0.95) !important;
@@ -423,25 +467,32 @@ export async function generateStandaloneHTML(
   <div id="panorama"></div>
 
   <!-- Header -->
+  ${(() => {
+    const isDefaultOrEmpty = !project.title ||
+      /^(tour\s*virtual\s*360[º°]?|crie\s*imers[aã]o.*)$/i.test(project.title.trim());
+    if (isDefaultOrEmpty && !project.author) return '';
+    return `
   <header class="tour-header">
     <div class="tour-branding">
-      <h1 class="tour-title">${escapeHtml(project.title)}</h1>
+      ${!isDefaultOrEmpty ? `<h1 class="tour-title">${escapeHtml(project.title)}</h1>` : ''}
+      ${project.author ? `
       <div class="tour-meta">
         <span>${escapeHtml(project.author)}</span>
         ${project.institution ? `<span>·</span><span>${escapeHtml(project.institution)}</span>` : ''}
-      </div>
+      </div>` : ''}
     </div>
-  </header>
+  </header>`;
+  })()}
 
   <!-- Controles Flutuantes -->
-  <aside class="controls-strip">
+  <aside class="controls-strip" style="${(project.settings?.showNavigationControls ?? true) ? '' : 'display: none !important;'}">
     <button class="ctrl-btn" id="btn-zoom-in" title="Aproximar zoom">+</button>
     <button class="ctrl-btn" id="btn-zoom-out" title="Afastar zoom">−</button>
     <button class="ctrl-btn" id="btn-fullscreen" title="Modo Tela Cheia">⛶</button>
   </aside>
 
   <!-- Navegador de Cômodos -->
-  <nav class="room-navigator" id="room-nav" aria-label="Navegador de Ambientes"></nav>
+  <nav class="room-navigator" id="room-nav" aria-label="Navegador de Ambientes" style="${(project.settings?.showBottomRoomBar ?? false) ? '' : 'display: none !important;'}"></nav>
 
   <!-- Modal Educativo de Informação -->
   <div class="edu-modal-backdrop" id="edu-modal">
@@ -521,7 +572,9 @@ export async function generateStandaloneHTML(
           yaw: sc.initialYaw || 0,
           hfov: sc.initialHfov || 100,
           hotSpots: (sc.hotspots || []).map(function(hs) {
+            var pulseClass = (tourData.settings && tourData.settings.pulseEffect !== false) ? 'hotspot-pulse' : '';
             if (hs.type === 'scene') {
+              var arrowDir = hs.arrowDirection || (tourData.settings && tourData.settings.defaultArrowDirection) || 'right';
               return {
                 pitch: hs.pitch,
                 yaw: hs.yaw,
@@ -530,7 +583,7 @@ export async function generateStandaloneHTML(
                 sceneId: hs.targetSceneId,
                 targetPitch: hs.targetPitch || 0,
                 targetYaw: hs.targetYaw || 0,
-                cssClass: 'custom-hotspot-scene'
+                cssClass: ('custom-hotspot-scene arrow-' + arrowDir + ' ' + pulseClass).trim()
               };
             } else {
               return {
@@ -538,7 +591,7 @@ export async function generateStandaloneHTML(
                 yaw: hs.yaw,
                 type: 'info',
                 text: hs.title,
-                cssClass: 'custom-hotspot-info',
+                cssClass: ('custom-hotspot-info ' + pulseClass).trim(),
                 clickHandlerFunc: function() {
                   openModal(hs);
                 }
@@ -570,10 +623,12 @@ export async function generateStandaloneHTML(
       // Gerar botões de navegação dos cômodos
       function renderRoomNav() {
         roomNav.innerHTML = '';
+        const showHotspotCount = Boolean(tourData.settings && tourData.settings.showRoomBarHotspotCount);
         tourData.scenes.forEach(function(sc) {
           const btn = document.createElement('button');
           btn.className = 'room-pill' + (sc.id === currentSceneId ? ' active' : '');
-          btn.textContent = sc.name;
+          const countBadge = (showHotspotCount && sc.hotspots) ? ' (' + sc.hotspots.length + ')' : '';
+          btn.textContent = sc.name + countBadge;
           btn.addEventListener('click', function() {
             if (sc.id !== currentSceneId) {
               currentViewer.loadScene(sc.id);

@@ -5,23 +5,102 @@
 
 export type HotspotType = 'info' | 'scene';
 
+export type ArrowDirection =
+  | 'right'     // ➔
+  | 'left'      // ⬅
+  | 'up'        // ⬆
+  | 'down'      // ⬇
+  | 'up-right'  // ↗
+  | 'up-left'   // ↖
+  | 'compass'   // 🧭
+  | 'door';     // 🚪
+
+export function getArrowGlyph(direction?: ArrowDirection): string {
+  switch (direction) {
+    case 'left':
+      return '⬅';
+    case 'up':
+      return '⬆';
+    case 'down':
+      return '⬇';
+    case 'up-right':
+      return '↗';
+    case 'up-left':
+      return '↖';
+    case 'compass':
+      return '🧭';
+    case 'door':
+      return '🚪';
+    case 'right':
+    default:
+      return '➔';
+  }
+}
+
+export function getArrowLabel(direction: ArrowDirection): string {
+  switch (direction) {
+    case 'left':
+      return 'Esquerda (⬅)';
+    case 'up':
+      return 'Cima (⬆)';
+    case 'down':
+      return 'Baixo (⬇)';
+    case 'up-right':
+      return 'Diagonal Dir (↗)';
+    case 'up-left':
+      return 'Diagonal Esq (↖)';
+    case 'compass':
+      return 'Bússola (🧭)';
+    case 'door':
+      return 'Porta (🚪)';
+    case 'right':
+    default:
+      return 'Direita (➔)';
+  }
+}
+
+export interface GlobalHotspotSettings {
+  infoColor: string;          // HEX padrão dos hotspots informativos (ex: #0ea5e9)
+  sceneColor: string;         // HEX padrão dos portais de navegação (ex: #10b981)
+  pulseEffect: boolean;       // Efeito de pulsar/piscar suavemente
+  defaultArrowDirection: ArrowDirection; // Seta de navegação padrão
+  arrowColor: string;         // Cor do glifo da seta (ex: #ffffff)
+  showNavigationControls: boolean; // Exibir controles de zoom, centralizar e tela cheia (padrão: true)
+  showBottomRoomBar: boolean; // Exibir menu de navegação com nome dos espaços na parte inferior central (padrão: false)
+  showRoomBarHotspotCount: boolean; // Exibir número de hotspots nos botões do menu inferior de cômodos (padrão: false)
+}
+
+export const DEFAULT_HOTSPOT_SETTINGS: GlobalHotspotSettings = {
+  infoColor: '#0ea5e9',
+  sceneColor: '#10b981',
+  pulseEffect: true,
+  defaultArrowDirection: 'right',
+  arrowColor: '#ffffff',
+  showNavigationControls: true,
+  showBottomRoomBar: false,
+  showRoomBarHotspotCount: false,
+};
+
 export interface Hotspot {
   id: string;
   type: HotspotType;
   pitch: number;          // -90 (chão) até 90 (teto)
   yaw: number;            // -180 até 180 (360 horizontal)
   title: string;
+  customColor?: string;   // Cor individual (opcional)
   
   // Propriedades para Hotspot Informativo Educacional
   description?: string;
   imageUrl?: string;      // Data URL da imagem explicativa
-  category?: string;      // Ex: 'Arquitetura', 'Design de Interiores', 'Sustentabilidade', 'Tecnologia'
+  category?: string;
   iconName?: 'info' | 'book' | 'eye' | 'help' | 'lightbulb';
   
   // Propriedades para Hotspot de Navegação (Portal entre Cômodos)
   targetSceneId?: string; // ID da cena destino
   targetPitch?: number;   // Pitch inicial ao chegar na nova cena
   targetYaw?: number;     // Yaw inicial ao chegar na nova cena
+  arrowDirection?: ArrowDirection; // Direção específica da seta deste portal
+  arrowColor?: string;    // Cor individual da seta
 }
 
 export interface Scene {
@@ -44,6 +123,7 @@ export interface TourProject {
   description: string;
   initialSceneId: string;
   scenes: Scene[];
+  settings?: GlobalHotspotSettings; // Configurações gerais de aparência
   createdAt: number;
   updatedAt: number;
 }

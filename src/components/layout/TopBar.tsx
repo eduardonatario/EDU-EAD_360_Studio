@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Download, Eye, Layers, Moon, PenTool, Sun } from 'lucide-react';
+import { Download, Eye, Layers, Moon, PenTool, PlusCircle, Sun } from 'lucide-react';
 import React from 'react';
 import { TourProject, ViewMode } from '../../types/tour';
 
@@ -17,6 +17,7 @@ interface TopBarProps {
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
   onOpenProjectSettings?: () => void;
+  onNewTour?: () => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -29,12 +30,13 @@ export const TopBar: React.FC<TopBarProps> = ({
   theme,
   onToggleTheme,
   onOpenProjectSettings,
+  onNewTour,
 }) => {
   const totalHotspots = project.scenes.reduce((acc, s) => acc + s.hotspots.length, 0);
 
   return (
     <header className="h-16 px-6 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md flex items-center justify-between gap-6 shrink-0 z-40 select-none transition-colors">
-      {/* Zone 1: Single text element wordmark */}
+      {/* Zone 1: Single text element wordmark + Criar Novo Tour */}
       <div className="flex items-center gap-3 shrink-0">
         <div className="w-9 h-9 rounded-xl bg-sky-600 flex items-center justify-center text-white shadow-sm shadow-sky-600/30">
           <Layers className="w-5 h-5" />
@@ -43,10 +45,24 @@ export const TopBar: React.FC<TopBarProps> = ({
           <span className="text-base font-bold tracking-tight text-slate-900 dark:text-slate-100 whitespace-nowrap block leading-tight">
             EAD 360 Studio
           </span>
-          <span className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px] block">
-            {project.title}
-          </span>
+          {project.title && project.title !== 'Crie imersão em ambiente em 360º' && project.title !== 'Tour Virtual 360º' && (
+            <span className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px] block">
+              {project.title}
+            </span>
+          )}
         </div>
+
+        {onNewTour && (
+          <button
+            type="button"
+            onClick={onNewTour}
+            className="ml-2 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+            title="Apaga os ambientes virtuais de exemplo para criar um novo tour do zero"
+          >
+            <PlusCircle className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+            <span>Criar novo Tour</span>
+          </button>
+        )}
       </div>
 
       {/* Zone 2: Navigation Links / Status Indicator */}

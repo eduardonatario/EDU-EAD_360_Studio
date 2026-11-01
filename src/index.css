@@ -51,9 +51,9 @@
   width: 44px !important;
   height: 44px !important;
   border-radius: 9999px !important;
-  background: rgba(14, 165, 233, 0.95) !important; /* sky-500 */
+  background: var(--info-hotspot-color, #0ea5e9) !important;
   border: 2.5px solid #ffffff !important;
-  box-shadow: 0 4px 16px rgba(14, 165, 233, 0.7), 0 0 0 4px rgba(14, 165, 233, 0.25) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 0 3px rgba(255, 255, 255, 0.25) !important;
   cursor: pointer !important;
   display: flex !important;
   align-items: center !important;
@@ -61,7 +61,7 @@
   margin: 0 !important;
   box-sizing: border-box !important;
   pointer-events: auto !important;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease !important;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, filter 0.2s ease !important;
 }
 
 .custom-hotspot-info::after {
@@ -77,9 +77,9 @@
 }
 
 .custom-hotspot-info:hover {
-  background: #0284c7 !important;
+  filter: brightness(1.15) !important;
   border-color: #f0f9ff !important;
-  box-shadow: 0 0 0 6px rgba(14, 165, 233, 0.45), 0 8px 24px rgba(14, 165, 233, 0.9) !important;
+  box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.35), 0 8px 24px rgba(0, 0, 0, 0.5) !important;
 }
 
 .custom-hotspot-info:hover::after {
@@ -90,9 +90,9 @@
   width: 48px !important;
   height: 48px !important;
   border-radius: 9999px !important;
-  background: rgba(16, 185, 129, 0.95) !important; /* emerald-500 */
+  background: var(--scene-hotspot-color, #10b981) !important;
   border: 2.5px solid #ffffff !important;
-  box-shadow: 0 4px 18px rgba(16, 185, 129, 0.7), 0 0 0 5px rgba(16, 185, 129, 0.3) !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35), 0 0 0 4px rgba(255, 255, 255, 0.25) !important;
   cursor: pointer !important;
   display: flex !important;
   align-items: center !important;
@@ -100,24 +100,53 @@
   margin: 0 !important;
   box-sizing: border-box !important;
   pointer-events: auto !important;
-  animation: pulse-ring 2.4s infinite !important;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease !important;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, filter 0.2s ease !important;
 }
 
 .custom-hotspot-scene::after {
-  content: "➔" !important;
+  content: var(--scene-arrow-glyph, "➔") !important;
   font-size: 22px !important;
-  color: #ffffff !important;
+  color: var(--arrow-color, #ffffff) !important;
   line-height: 1 !important;
   pointer-events: none !important;
   display: block !important;
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
+/* Variações de direção de seta */
+.arrow-right::after { content: "➔" !important; }
+.arrow-left::after { content: "⬅" !important; }
+.arrow-up::after { content: "⬆" !important; }
+.arrow-down::after { content: "⬇" !important; }
+.arrow-up-right::after { content: "↗" !important; }
+.arrow-up-left::after { content: "↖" !important; }
+.arrow-compass::after { content: "🧭" !important; font-size: 20px !important; }
+.arrow-door::after { content: "🚪" !important; font-size: 20px !important; }
+
+/* Efeito de piscar / pulsar suavemente */
+.hotspot-pulse {
+  animation: gentle-glow 2.2s infinite ease-in-out !important;
+}
+
+@keyframes gentle-glow {
+  0% {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 0 0 0 rgba(255, 255, 255, 0.55);
+    filter: brightness(1);
+  }
+  50% {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45), 0 0 0 9px rgba(255, 255, 255, 0);
+    filter: brightness(1.2);
+  }
+  100% {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 0 0 0 rgba(255, 255, 255, 0);
+    filter: brightness(1);
+  }
+}
+
 .custom-hotspot-scene:hover {
-  background: #059669 !important;
+  filter: brightness(1.15) !important;
   border-color: #ecfdf5 !important;
-  box-shadow: 0 0 0 7px rgba(16, 185, 129, 0.5), 0 8px 26px rgba(16, 185, 129, 0.95) !important;
+  box-shadow: 0 0 0 7px rgba(255, 255, 255, 0.4), 0 8px 26px rgba(0, 0, 0, 0.55) !important;
 }
 
 .custom-hotspot-scene:hover::after {
