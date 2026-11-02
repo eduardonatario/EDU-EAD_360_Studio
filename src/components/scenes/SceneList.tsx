@@ -263,7 +263,7 @@ export const SceneList: React.FC<SceneListProps> = ({
                 Opções Gerais
               </span>
               <span className="text-[10px] text-slate-500 dark:text-slate-400 block -mt-0.5">
-                Cores, animação e setas dos hotspots
+                Personalize cores, setas, controles, menus e formato
               </span>
             </div>
           </div>
