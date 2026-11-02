@@ -10,6 +10,37 @@ import livingPano from '../../assets/images/modern_living_room_1793417467833.jpg
 import { DEFAULT_HOTSPOT_SETTINGS, TourProject } from '../../types/tour';
 import { generateEducationalCardImage } from './panoramaGenerator';
 
+export async function downloadDemoImages(): Promise<void> {
+  const images = [
+    { url: livingPano, filename: '01_sala_de_estar_360.jpg' },
+    { url: kitchenPano, filename: '02_cozinha_gourmet_360.jpg' },
+    { url: bedroomPano, filename: '03_quarto_suite_360.jpg' },
+    { url: bathroomPano, filename: '04_banheiro_spa_360.jpg' },
+  ];
+
+  for (const item of images) {
+    try {
+      const res = await fetch(item.url);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = item.filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        if (a.parentNode === document.body) {
+          document.body.removeChild(a);
+        }
+        URL.revokeObjectURL(blobUrl);
+      }, 500);
+      await new Promise((r) => setTimeout(r, 350));
+    } catch (err) {
+      console.warn('Erro ao baixar imagem:', item.filename, err);
+    }
+  }
+}
+
 export function createModernHouseDemoProject(): TourProject {
   const bioclimaticImg = generateEducationalCardImage('bioclimatic');
   const lightingImg = generateEducationalCardImage('lighting');

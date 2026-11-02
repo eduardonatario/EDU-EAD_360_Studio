@@ -61,11 +61,13 @@ export async function generateStandaloneHTML(
     /* Pannellum Embedded CSS */
     ${pannellumCssRaw}
 
-    /* Ocultar nome de cômodos / título dentro do visualizador 360 */
+    /* Ocultar nome de cômodos / título dentro do visualizador 360 e mensagem Pannellum 2.5.7 do botão direito */
     .pnlm-panorama-info,
     .pnlm-title-box,
     .pnlm-author-box,
-    .pnlm-compass {
+    .pnlm-compass,
+    .pnlm-about-msg,
+    .pnlm-about-menu {
       display: none !important;
       visibility: hidden !important;
       opacity: 0 !important;
@@ -200,25 +202,31 @@ export async function generateStandaloneHTML(
       visibility: hidden !important;
       opacity: 0 !important;
       position: absolute !important;
-      bottom: calc(100% + 12px) !important;
+      bottom: calc(100% + 10px) !important;
       left: 50% !important;
       transform: translateX(-50%) !important;
       margin: 0 !important;
-      font-size: 13px !important;
+      font-size: 12px !important;
       font-weight: 600 !important;
       background-color: rgba(15, 23, 42, 0.95) !important;
       color: #f8fafc !important;
-      border-radius: 8px !important;
-      padding: 6px 14px !important;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
+      border-radius: 6px !important;
+      padding: 4px 8px !important;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45) !important;
       border: 1px solid rgba(255, 255, 255, 0.18) !important;
       pointer-events: none !important;
       white-space: nowrap !important;
+      display: inline-block !important;
+      width: max-content !important;
+      max-width: max-content !important;
+      min-width: min-content !important;
+      box-sizing: border-box !important;
       z-index: 50 !important;
       transition: opacity 0.2s ease, visibility 0.2s ease !important;
     }
 
-    div.pnlm-tooltip:hover span {
+    div.pnlm-tooltip:hover span,
+    div.pnlm-tooltip.pnlm-tooltip-active span {
       visibility: visible !important;
       opacity: 1 !important;
     }
@@ -496,7 +504,8 @@ export async function generateStandaloneHTML(
 
   <!-- Modal Educativo de Informação -->
   <div class="edu-modal-backdrop" id="edu-modal">
-    <div class="edu-modal-card" role="dialog" aria-modal="true">
+    <div class="edu-modal-card" role="dialog" aria-modal="true" style="position: relative;">
+      <button class="edu-close-btn" id="modal-close-overlay" aria-label="Fechar" style="display: none; position: absolute; top: 12px; right: 12px; z-index: 10; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 9999px;">✕</button>
       <div class="edu-modal-header">
         <div>
           <h2 class="edu-modal-title" id="modal-title">Título do Ponto de Estudo</h2>
@@ -527,10 +536,14 @@ export async function generateStandaloneHTML(
 
       // Elementos do DOM
       const modal = document.getElementById('edu-modal');
+      const modalHeader = document.querySelector('.edu-modal-header');
+      const modalFooter = document.querySelector('.edu-modal-footer');
+      const modalBody = document.querySelector('.edu-modal-body');
       const modalTitle = document.getElementById('modal-title');
       const modalImage = document.getElementById('modal-image');
       const modalText = document.getElementById('modal-text');
       const modalCloseBtn = document.getElementById('modal-close-btn');
+      const modalCloseOverlay = document.getElementById('modal-close-overlay');
       const modalOkBtn = document.getElementById('modal-ok-btn');
       const roomNav = document.getElementById('room-nav');
       const btnFullscreen = document.getElementById('btn-fullscreen');
@@ -538,13 +551,33 @@ export async function generateStandaloneHTML(
       const btnZoomOut = document.getElementById('btn-zoom-out');
 
       function openModal(hotspot) {
-        modalTitle.textContent = hotspot.title;
-        modalText.textContent = hotspot.description || '';
-        if (hotspot.imageUrl) {
+        if (hotspot.imageOnly && hotspot.imageUrl) {
+          modalCloseOverlay.style.display = 'flex';
+          modalHeader.style.display = 'none';
+          modalFooter.style.display = 'none';
+          modalText.style.display = 'none';
+          modalBody.style.padding = '0';
+          modalImage.style.marginBottom = '0';
+          modalImage.style.borderRadius = '16px';
+          modalImage.style.maxHeight = '88vh';
           modalImage.src = hotspot.imageUrl;
           modalImage.style.display = 'block';
         } else {
-          modalImage.style.display = 'none';
+          modalCloseOverlay.style.display = 'none';
+          modalHeader.style.display = 'flex';
+          modalFooter.style.display = 'flex';
+          modalText.style.display = 'block';
+          modalBody.style.padding = '20px 24px 24px 24px';
+          modalImage.style.marginBottom = '18px';
+          modalTitle.textContent = hotspot.title;
+          modalText.textContent = hotspot.description || '';
+          if (hotspot.imageUrl) {
+            modalImage.src = hotspot.imageUrl;
+            modalImage.style.display = 'block';
+            modalImage.style.maxHeight = '280px';
+          } else {
+            modalImage.style.display = 'none';
+          }
         }
         modal.classList.add('open');
       }
@@ -554,6 +587,7 @@ export async function generateStandaloneHTML(
       }
 
       modalCloseBtn.addEventListener('click', closeModal);
+      modalCloseOverlay.addEventListener('click', closeModal);
       modalOkBtn.addEventListener('click', closeModal);
       modal.addEventListener('click', function(e) {
         if (e.target === modal) closeModal();
@@ -570,7 +604,8 @@ export async function generateStandaloneHTML(
           panorama: sc.imageUrl,
           pitch: sc.initialPitch || 0,
           yaw: sc.initialYaw || 0,
-          hfov: sc.initialHfov || 100,
+          hfov: (tourData.settings && tourData.settings.initialWideFov) ? 120 : (sc.initialHfov || 100),
+          maxHfov: (tourData.settings && tourData.settings.initialWideFov) ? 130 : 120,
           hotSpots: (sc.hotspots || []).map(function(hs) {
             var pulseClass = (tourData.settings && tourData.settings.pulseEffect !== false) ? 'hotspot-pulse' : '';
             if (hs.type === 'scene') {
@@ -610,10 +645,20 @@ export async function generateStandaloneHTML(
           showControls: false,
           compass: false,
           mouseZoom: true,
-          keyboardZoom: true
+          keyboardZoom: true,
+          hfov: (tourData.settings && tourData.settings.initialWideFov) ? 120 : 100,
+          maxHfov: (tourData.settings && tourData.settings.initialWideFov) ? 130 : 120
         },
         scenes: pnlmScenes
       });
+
+      var panoEl = document.getElementById('panorama');
+      if (panoEl) {
+        panoEl.addEventListener('contextmenu', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }, true);
+      }
 
       currentViewer.on('scenechange', function(sceneId) {
         currentSceneId = sceneId;

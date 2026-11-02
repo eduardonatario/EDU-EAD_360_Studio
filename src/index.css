@@ -24,11 +24,13 @@
    3. Nunca sobrescrever 'transform' em :hover ou em estados do elemento.
 */
 
-/* Ocultar nome dos cômodos e bússola de dentro da imagem 360 */
+/* Ocultar nome dos cômodos, bússola e mensagem Pannellum 2.5.7 do botão direito */
 .pnlm-panorama-info,
 .pnlm-title-box,
 .pnlm-author-box,
-.pnlm-compass {
+.pnlm-compass,
+.pnlm-about-msg,
+.pnlm-about-menu {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
@@ -189,32 +191,38 @@
   }
 }
 
-/* Tooltip do Pannellum */
+/* Tooltip do Pannellum - Fundo preto ajustado com precisão ao tamanho exato das palavras */
 div.pnlm-tooltip span {
   visibility: hidden !important;
   opacity: 0 !important;
   position: absolute !important;
-  bottom: calc(100% + 12px) !important;
+  bottom: calc(100% + 10px) !important;
   left: 50% !important;
   transform: translateX(-50%) !important;
   margin: 0 !important;
   font-family: var(--font-sans) !important;
-  font-size: 13px !important;
+  font-size: 12px !important;
   font-weight: 600 !important;
   background-color: rgba(15, 23, 42, 0.95) !important;
   color: #f8fafc !important;
-  border-radius: 8px !important;
-  padding: 6px 14px !important;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
+  border-radius: 6px !important;
+  padding: 4px 8px !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45) !important;
   letter-spacing: -0.01em !important;
   border: 1px solid rgba(255, 255, 255, 0.18) !important;
   pointer-events: none !important;
   white-space: nowrap !important;
+  display: inline-block !important;
+  width: max-content !important;
+  max-width: max-content !important;
+  min-width: min-content !important;
+  box-sizing: border-box !important;
   z-index: 50 !important;
   transition: opacity 0.2s ease, visibility 0.2s ease !important;
 }
 
-div.pnlm-tooltip:hover span {
+div.pnlm-tooltip:hover span,
+div.pnlm-tooltip.pnlm-tooltip-active span {
   visibility: visible !important;
   opacity: 1 !important;
 }

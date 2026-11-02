@@ -59,6 +59,8 @@ export function getArrowLabel(direction: ArrowDirection): string {
   }
 }
 
+export type ViewportFormat = 'free' | '16:9' | '9:16' | 'custom';
+
 export interface GlobalHotspotSettings {
   infoColor: string;          // HEX padrão dos hotspots informativos (ex: #0ea5e9)
   sceneColor: string;         // HEX padrão dos portais de navegação (ex: #10b981)
@@ -68,6 +70,10 @@ export interface GlobalHotspotSettings {
   showNavigationControls: boolean; // Exibir controles de zoom, centralizar e tela cheia (padrão: true)
   showBottomRoomBar: boolean; // Exibir menu de navegação com nome dos espaços na parte inferior central (padrão: false)
   showRoomBarHotspotCount: boolean; // Exibir número de hotspots nos botões do menu inferior de cômodos (padrão: false)
+  viewportFormat?: ViewportFormat; // Formato do espaço de navegação: 'free' | '16:9' | '9:16' | 'custom'
+  customWidth?: number;       // Largura para formato personalizado (px)
+  customHeight?: number;      // Altura para formato personalizado (px)
+  initialWideFov?: boolean;   // Iniciar ambiente com imagem mais aberta possível (visão ampla)
 }
 
 export const DEFAULT_HOTSPOT_SETTINGS: GlobalHotspotSettings = {
@@ -79,6 +85,10 @@ export const DEFAULT_HOTSPOT_SETTINGS: GlobalHotspotSettings = {
   showNavigationControls: true,
   showBottomRoomBar: false,
   showRoomBarHotspotCount: false,
+  viewportFormat: 'free',
+  customWidth: 1920,
+  customHeight: 1080,
+  initialWideFov: false,
 };
 
 export interface Hotspot {
@@ -92,6 +102,7 @@ export interface Hotspot {
   // Propriedades para Hotspot Informativo Educacional
   description?: string;
   imageUrl?: string;      // Data URL da imagem explicativa
+  imageOnly?: boolean;    // Exibir apenas imagem preenchendo o quadro de informação
   category?: string;
   iconName?: 'info' | 'book' | 'eye' | 'help' | 'lightbulb';
   

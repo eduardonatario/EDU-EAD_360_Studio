@@ -15,6 +15,38 @@ interface HotspotModalProps {
 export const HotspotModal: React.FC<HotspotModalProps> = ({ hotspot, onClose }) => {
   if (!hotspot) return null;
 
+  // Modo Apenas Imagem preenchendo o quadro de informação
+  if (hotspot.imageOnly && hotspot.imageUrl) {
+    return (
+      <div
+        className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 select-none animate-in fade-in duration-200"
+        onClick={onClose}
+      >
+        <div
+          className="relative bg-black rounded-2xl max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl flex items-center justify-center border border-white/15"
+          onClick={(e) => e.stopPropagation()}
+          role="dialog"
+          aria-modal="true"
+        >
+          <img
+            src={hotspot.imageUrl}
+            alt={hotspot.title}
+            className="w-full h-full max-h-[88vh] object-contain block"
+          />
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute top-3 right-3 p-2 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white backdrop-blur-md transition-colors cursor-pointer border border-white/20 shadow-lg"
+            aria-label="Fechar"
+            title="Fechar"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 select-none animate-in fade-in duration-200"

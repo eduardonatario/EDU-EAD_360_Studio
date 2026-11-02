@@ -1,37 +1,70 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR" translate="no">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="google" content="notranslate" />
     <script>
-      // Global safeguard against Pannellum async FileReader cleanup race conditions
+      // Global safeguard against translation tools / extensions modifying DOM out from under React
       (function() {
-        if (typeof window !== 'undefined' && window.FileReader) {
-          var origAddEvt = FileReader.prototype.addEventListener;
-          FileReader.prototype.addEventListener = function(type, listener, options) {
-            if (typeof listener === 'function') {
-              var safeListener = function() {
-                try {
-                  return listener.apply(this, arguments);
-                } catch (err) {
-                  if (err && err.message && (err.message.indexOf("setting 'src'") !== -1 || err.message.indexOf("Cannot set properties of undefined") !== -1)) {
-                    console.warn('[Pannellum] Ignorando corrida assíncrona de limpeza do FileReader com sucesso.');
-                    return;
-                  }
-                  throw err;
+        if (typeof window !== 'undefined') {
+          if (typeof Node !== 'undefined' && Node.prototype) {
+            var origRemoveChild = Node.prototype.removeChild;
+            Node.prototype.removeChild = function(child) {
+              if (child && child.parentNode !== this) {
+                if (console && console.warn) {
+                  console.warn('[DOM Safeguard] Ignorando removeChild de nó com parent divergente.', child);
                 }
-              };
-              return origAddEvt.call(this, type, safeListener, options);
-            }
-            return origAddEvt.call(this, type, listener, options);
-          };
-        }
-        window.addEventListener('error', function(e) {
-          if (e && e.message && (e.message.indexOf("setting 'src'") !== -1 || e.message.indexOf("Cannot set properties of undefined") !== -1)) {
-            e.preventDefault();
-            e.stopImmediatePropagation();
+                return child;
+              }
+              return origRemoveChild.call(this, child);
+            };
+
+            var origInsertBefore = Node.prototype.insertBefore;
+            Node.prototype.insertBefore = function(newNode, referenceNode) {
+              if (referenceNode && referenceNode.parentNode !== this) {
+                if (console && console.warn) {
+                  console.warn('[DOM Safeguard] Ignorando insertBefore de nó com parent divergente.', referenceNode);
+                }
+                return newNode;
+              }
+              return origInsertBefore.call(this, newNode, referenceNode);
+            };
           }
-        }, true);
+
+          // Safeguard against Pannellum async FileReader cleanup race conditions
+          if (window.FileReader) {
+            var origAddEvt = FileReader.prototype.addEventListener;
+            FileReader.prototype.addEventListener = function(type, listener, options) {
+              if (typeof listener === 'function') {
+                var safeListener = function() {
+                  try {
+                    return listener.apply(this, arguments);
+                  } catch (err) {
+                    if (err && err.message && (err.message.indexOf("setting 'src'") !== -1 || err.message.indexOf("Cannot set properties of undefined") !== -1)) {
+                      console.warn('[Pannellum] Ignorando corrida assíncrona de limpeza do FileReader com sucesso.');
+                      return;
+                    }
+                    throw err;
+                  }
+                };
+                return origAddEvt.call(this, type, safeListener, options);
+              }
+              return origAddEvt.call(this, type, listener, options);
+            };
+          }
+
+          window.addEventListener('error', function(e) {
+            if (e && e.message && (
+              e.message.indexOf("setting 'src'") !== -1 ||
+              e.message.indexOf("Cannot set properties of undefined") !== -1 ||
+              e.message.indexOf("The node to be removed is not a child of this node") !== -1
+            )) {
+              e.preventDefault();
+              e.stopImmediatePropagation();
+            }
+          }, true);
+        }
       })();
     </script>
     <title>EAD 360 Studio</title>

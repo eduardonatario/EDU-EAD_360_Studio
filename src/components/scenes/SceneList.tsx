@@ -24,6 +24,7 @@ import {
   Info,
   Layers,
   MapPin,
+  Monitor,
   Move,
   Navigation,
   Palette,
@@ -58,7 +59,7 @@ interface SceneListProps {
   onSetInitialScene: (sceneId: string) => void;
   onResetToDemo?: () => void;
   // Ações de hotspots aninhadas
-  onSelectHotspot?: (hotspot: Hotspot) => void;
+  onSelectHotspot?: (hotspot: Hotspot, sceneId?: string) => void;
   onStartPlacement?: () => void;
   onStartRepositionSession?: (targetHotspot?: Hotspot) => void;
   onDuplicateHotspot?: (hotspot: Hotspot) => void;
@@ -123,7 +124,8 @@ export const SceneList: React.FC<SceneListProps> = ({
   onDeleteHotspot,
   isBusy = false,
 }) => {
-  const [isGeneralSettingsOpen, setIsGeneralSettingsOpen] = useState(true);
+  const [isGeneralSettingsOpen, setIsGeneralSettingsOpen] = useState(false);
+  const [isScenesListCollapsed, setIsScenesListCollapsed] = useState(false);
   const [editingSceneId, setEditingSceneId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [isAddingOpen, setIsAddingOpen] = useState(false);
@@ -371,57 +373,11 @@ export const SceneList: React.FC<SceneListProps> = ({
                 />
               </label>
               <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-0.5">
-                Efeito de pulsar suave nos marcadores para atrair a atenção do aluno.
+                Efeito de pulsar nos marcadores e setas
               </span>
             </div>
 
-            {/* Opção 4: Setas de navegação entre os cômodos (direções e cores) */}
-            <div className="pt-1 border-t border-slate-200/80 dark:border-slate-800/80 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                  Setas de Navegação (Padrão)
-                </span>
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-slate-400">Cor:</span>
-                  <input
-                    type="color"
-                    value={settings.arrowColor}
-                    onChange={(e) => updateSetting('arrowColor', e.target.value)}
-                    className="w-4 h-4 rounded cursor-pointer border border-slate-300 dark:border-slate-700 bg-transparent p-0"
-                    title="Cor da seta"
-                  />
-                </div>
-              </div>
-
-              {/* Grid de opções de seta */}
-              <div className="grid grid-cols-4 gap-1">
-                {ARROW_DIRECTIONS.map((dir) => {
-                  const isSelected = settings.defaultArrowDirection === dir.id;
-                  return (
-                    <button
-                      key={dir.id}
-                      type="button"
-                      onClick={() => updateSetting('defaultArrowDirection', dir.id)}
-                      title={dir.label}
-                      className={`p-1.5 rounded-lg flex flex-col items-center justify-center transition-all cursor-pointer border ${
-                        isSelected
-                          ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500 text-emerald-700 dark:text-emerald-300 font-bold shadow-xs'
-                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
-                      }`}
-                    >
-                      <span className="text-sm leading-none" style={{ color: settings.arrowColor }}>
-                        {dir.glyph}
-                      </span>
-                      <span className="text-[9px] mt-0.5 truncate max-w-full">
-                        {dir.label}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Opção 5: Exibir controles de navegação (lupa, zoom, centralizar camera e tela cheia) */}
+            {/* Opção 4: Exibir controles de navegação (lupa, zoom, centralizar camera e tela cheia) */}
             <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800/80">
               <label className="flex items-center justify-between cursor-pointer group">
                 <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
@@ -476,20 +432,154 @@ export const SceneList: React.FC<SceneListProps> = ({
                 </div>
               )}
             </div>
+
+            {/* Opção 7: Formato e Tamanho do Espaço de Navegação */}
+            <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800/80 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Monitor className="w-3.5 h-3.5 text-sky-500" />
+                  <span>Formato do Espaço de Navegação</span>
+                </span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                  {settings.viewportFormat === '16:9'
+                    ? '16:9 (1920×1080)'
+                    : settings.viewportFormat === '9:16'
+                    ? '9:16 (1080×1920)'
+                    : settings.viewportFormat === 'custom'
+                    ? 'Personalizado'
+                    : 'Livre'}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => updateSetting('viewportFormat', 'free')}
+                  className={`p-2 rounded-lg text-[11px] font-semibold flex flex-col items-center justify-center gap-0.5 border transition-all cursor-pointer ${
+                    (settings.viewportFormat ?? 'free') === 'free'
+                      ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-500 text-sky-600 dark:text-sky-400 shadow-xs'
+                      : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                  }`}
+                >
+                  <span>Formato livre</span>
+                  <span className="text-[9px] font-normal opacity-75">100% Responsivo</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateSetting('viewportFormat', '16:9')}
+                  className={`p-2 rounded-lg text-[11px] font-semibold flex flex-col items-center justify-center gap-0.5 border transition-all cursor-pointer ${
+                    settings.viewportFormat === '16:9'
+                      ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-500 text-sky-600 dark:text-sky-400 shadow-xs'
+                      : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                  }`}
+                >
+                  <span>1920 × 1080 (16:9)</span>
+                  <span className="text-[9px] font-normal opacity-75">Horizontal Full HD</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateSetting('viewportFormat', '9:16')}
+                  className={`p-2 rounded-lg text-[11px] font-semibold flex flex-col items-center justify-center gap-0.5 border transition-all cursor-pointer ${
+                    settings.viewportFormat === '9:16'
+                      ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-500 text-sky-600 dark:text-sky-400 shadow-xs'
+                      : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                  }`}
+                >
+                  <span>1080 × 1920 (9:16)</span>
+                  <span className="text-[9px] font-normal opacity-75">Vertical / Mobile</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateSetting('viewportFormat', 'custom')}
+                  className={`p-2 rounded-lg text-[11px] font-semibold flex flex-col items-center justify-center gap-0.5 border transition-all cursor-pointer ${
+                    settings.viewportFormat === 'custom'
+                      ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-500 text-sky-600 dark:text-sky-400 shadow-xs'
+                      : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                  }`}
+                >
+                  <span>Personalizado</span>
+                  <span className="text-[9px] font-normal opacity-75">Largura × Altura</span>
+                </button>
+              </div>
+
+              {settings.viewportFormat === 'custom' && (
+                <div className="grid grid-cols-2 gap-2 pt-1 animate-in fade-in duration-150">
+                  <div>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-1">
+                      Largura (px):
+                    </span>
+                    <input
+                      type="number"
+                      min={320}
+                      max={3840}
+                      step={10}
+                      value={settings.customWidth ?? 1920}
+                      onChange={(e) => updateSetting('customWidth', Number(e.target.value) || 1920)}
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md px-2 py-1 text-slate-900 dark:text-slate-100 font-mono text-xs"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-1">
+                      Altura (px):
+                    </span>
+                    <input
+                      type="number"
+                      min={240}
+                      max={2160}
+                      step={10}
+                      value={settings.customHeight ?? 1080}
+                      onChange={(e) => updateSetting('customHeight', Number(e.target.value) || 1080)}
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md px-2 py-1 text-slate-900 dark:text-slate-100 font-mono text-xs"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Opção 8: Iniciar ambiente com a imagem mais aberta possível */}
+            <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800/80">
+              <label className="flex items-center justify-between cursor-pointer group">
+                <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                  Iniciar ambiente com imagem mais aberta possível
+                </span>
+                <input
+                  type="checkbox"
+                  checked={settings.initialWideFov ?? false}
+                  onChange={(e) => updateSetting('initialWideFov', e.target.checked)}
+                  className="w-4 h-4 text-sky-600 rounded cursor-pointer accent-sky-600"
+                />
+              </label>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-0.5">
+                Abre o campo de visão panorâmico no máximo (grande angular / visão ampla).
+              </span>
+            </div>
           </div>
         )}
       </div>
 
       {/* 2. SEÇÃO AMBIENTES VIRTUAIS COM HOTSPOTS ANINHADOS */}
       <div className="p-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900">
-        <div>
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-            Ambientes Virtuais
-          </h2>
-          <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium tabular-nums">
-            {scenes.length} {scenes.length === 1 ? 'cômodo' : 'cômodos'} cadastrados
-          </span>
-        </div>
+        <button
+          type="button"
+          onClick={() => setIsScenesListCollapsed(!isScenesListCollapsed)}
+          className="flex items-center gap-2 text-left cursor-pointer group flex-1"
+          title={isScenesListCollapsed ? 'Clique para expandir os cômodos' : 'Clique para recolher os cômodos cadastrados'}
+        >
+          <div>
+            <div className="flex items-center gap-1.5">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
+                Ambientes Virtuais
+              </h2>
+              {isScenesListCollapsed ? (
+                <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-sky-500 transition-colors" />
+              ) : (
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-sky-500 transition-colors" />
+              )}
+            </div>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium tabular-nums block">
+              {scenes.length} {scenes.length === 1 ? 'cômodo' : 'cômodos'} cadastrados
+            </span>
+          </div>
+        </button>
         <button
           type="button"
           onClick={() => setIsAddingOpen(!isAddingOpen)}
@@ -599,7 +689,8 @@ export const SceneList: React.FC<SceneListProps> = ({
       )}
 
       {/* 3. LISTA DE AMBIENTES COM HOTSPOTS ANINHADOS LOGO ABAIXO */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-3">
+      {!isScenesListCollapsed && (
+        <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {scenes.length === 0 ? (
           <div className="p-4 text-center border-2 border-dashed border-slate-300 dark:border-slate-800 rounded-xl space-y-2.5">
             <span className="text-xs text-slate-500 dark:text-slate-400 block font-medium">
@@ -810,7 +901,7 @@ export const SceneList: React.FC<SceneListProps> = ({
                         return (
                           <div
                             key={hs.id}
-                            onClick={() => onSelectHotspot?.(hs)}
+                            onClick={() => onSelectHotspot?.(hs, scene.id)}
                             className={`group rounded-lg p-2 border transition-all cursor-pointer flex items-center justify-between gap-2 ${
                               isSelected
                                 ? 'bg-sky-50 dark:bg-slate-800 border-sky-500 shadow-xs ring-1 ring-sky-500/30'
@@ -893,7 +984,7 @@ export const SceneList: React.FC<SceneListProps> = ({
                         return (
                           <div
                             key={hs.id}
-                            onClick={() => onSelectHotspot?.(hs)}
+                            onClick={() => onSelectHotspot?.(hs, scene.id)}
                             className={`group rounded-lg p-2 border transition-all cursor-pointer flex items-center justify-between gap-2 ${
                               isSelected
                                 ? 'bg-emerald-50 dark:bg-slate-800 border-emerald-500 shadow-xs ring-1 ring-emerald-500/30'
@@ -981,6 +1072,7 @@ export const SceneList: React.FC<SceneListProps> = ({
         })
       )}
     </div>
+    )}
 
       {/* MODAL / DIÁLOGO DE TROCAR IMAGEM 360° DO CÔMODO */}
       {changingImageScene && (

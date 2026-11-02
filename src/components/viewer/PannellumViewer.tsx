@@ -27,6 +27,22 @@ interface PannellumViewerProps {
   selectedHotspotId?: string | null;
 }
 
+function toValidCoords(rawPitch: number, rawYaw: number): Coords360 {
+  // Clamping vertical pitch strictly to valid range [-90, 90]
+  const clampedPitch = Math.max(-90, Math.min(90, Number(rawPitch) || 0));
+
+  // Normalizing horizontal yaw strictly to valid range [-180, 180]
+  let normalizedYaw = Number(rawYaw) || 0;
+  while (normalizedYaw > 180) normalizedYaw -= 360;
+  while (normalizedYaw < -180) normalizedYaw += 360;
+
+  // Arredondar para valores inteiros ou com 0,5 como décimos (ex: -10, -9.5, 0, 0.5, 12, 12.5)
+  const pitch = Math.round(clampedPitch * 2) / 2;
+  const yaw = Math.round(normalizedYaw * 2) / 2;
+
+  return { pitch, yaw };
+}
+
 export const PannellumViewer: React.FC<PannellumViewerProps> = ({
   scenes,
   activeSceneId,
@@ -92,6 +108,9 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
   activeSceneIdRef.current = activeSceneId;
 
   const handleStartHotspotDrag = (hs: Hotspot, startEvent: MouseEvent) => {
+    // Selecionar o hotspot imediatamente ao iniciar o clique/arrasto para abrir o painel com as opções
+    onSelectInfoHotspotRef.current(hs);
+
     dragSessionRef.current = {
       hotspotId: hs.id,
       sceneId: activeSceneIdRef.current,
@@ -121,8 +140,7 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
         try {
           const coords = viewerRef.current.mouseEventToCoords(e);
           if (coords && coords.length === 2) {
-            const pitch = Math.round(coords[0] * 10) / 10;
-            const yaw = Math.round(coords[1] * 10) / 10;
+            const { pitch, yaw } = toValidCoords(coords[0], coords[1]);
             session.lastCoords = { pitch, yaw };
 
             // Atualiza em tempo real as coordenadas do hotspot na instância ativa do Pannellum
@@ -157,11 +175,17 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
       if (!session) return;
 
       if (session.hasMoved && session.lastCoords) {
+        // Envia as coordenadas diretamente para salvar e preencher os campos de Orientação Espacial
         onUpdateHotspotCoordsRef.current?.(
           session.sceneId,
           session.hotspotId,
           session.lastCoords
         );
+        onSelectInfoHotspotRef.current({
+          ...hs,
+          pitch: session.lastCoords.pitch,
+          yaw: session.lastCoords.yaw,
+        });
       } else {
         onSelectInfoHotspotRef.current(hs);
       }
@@ -222,7 +246,8 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
         panorama: sc.imageUrl,
         pitch: sc.initialPitch || 0,
         yaw: sc.initialYaw || 0,
-        hfov: sc.initialHfov || 100,
+        hfov: settings?.initialWideFov ? 120 : (sc.initialHfov || 100),
+        maxHfov: settings?.initialWideFov ? 130 : 120,
         hotSpots: sc.hotspots.map((hs) => {
           const isSelected = hs.id === selectedHotspotId;
           const isInfo = hs.type === 'info';
@@ -263,9 +288,6 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
                 span.textContent = hs.title;
                 hotSpotDiv.classList.add('pnlm-tooltip');
                 hotSpotDiv.appendChild(span);
-                span.style.width = span.scrollWidth - 20 + 'px';
-                span.style.marginLeft = -(span.scrollWidth - hotSpotDiv.offsetWidth) / 2 + 'px';
-                span.style.marginTop = -span.scrollHeight - 12 + 'px';
               }
 
               // Arrastar pontos para novos lugares diretamente no modo Configuração
@@ -279,12 +301,19 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
                 handleStartHotspotDrag(hs, e);
               });
 
-              // No modo Configuração, clique direto na div nunca navega; seleciona para editar
+              // No modo Configuração: clicar na div seleciona para editar e NUNCA muda de cômodo
               hotSpotDiv.addEventListener('click', (e: MouseEvent) => {
+                e.stopPropagation();
+                e.preventDefault();
+                hotSpotDiv.classList.toggle('pnlm-tooltip-active');
                 if (viewModeRef.current === 'editor') {
-                  e.stopPropagation();
-                  e.preventDefault();
                   onSelectInfoHotspotRef.current(hs);
+                } else {
+                  if (hs.type === 'scene' && hs.targetSceneId) {
+                    onNavigateSceneRef.current(hs.targetSceneId);
+                  } else {
+                    onSelectInfoHotspotRef.current(hs);
+                  }
                 }
               });
             },
@@ -332,6 +361,8 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
           compass: false,
           mouseZoom: true,
           keyboardZoom: true,
+          hfov: settings?.initialWideFov ? 120 : 100,
+          maxHfov: settings?.initialWideFov ? 130 : 120,
         },
         scenes: pnlmScenes,
       });
@@ -343,6 +374,12 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
           onNavigateSceneRef.current(newSceneId);
         }
       });
+
+      // Remover texto e caixa "Pannellum 2.5.7" do botão direito
+      const aboutEl = containerRef.current.querySelector('.pnlm-about-msg');
+      if (aboutEl) {
+        aboutEl.remove();
+      }
     } catch (err) {
       console.error('Erro ao inicializar Pannellum:', err);
     }
@@ -421,8 +458,7 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
           try {
             const coords = viewerRef.current.mouseEventToCoords(e);
             if (coords && coords.length === 2) {
-              const pitch = Math.round(coords[0] * 10) / 10;
-              const yaw = Math.round(coords[1] * 10) / 10;
+              const { pitch, yaw } = toValidCoords(coords[0], coords[1]);
               onSetNewCoordsForRepositionRef.current({ pitch, yaw });
             }
           } catch (err) {
@@ -439,8 +475,7 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
           try {
             const coords = viewerRef.current.mouseEventToCoords(e);
             if (coords && coords.length === 2) {
-              const pitch = Math.round(coords[0] * 10) / 10;
-              const yaw = Math.round(coords[1] * 10) / 10;
+              const { pitch, yaw } = toValidCoords(coords[0], coords[1]);
               onPlaceNewHotspotCoordsRef.current({ pitch, yaw });
             }
           } catch (err) {
@@ -450,12 +485,19 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
       }
     };
 
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
     container.addEventListener('mousedown', handlePointerDown, true);
     container.addEventListener('mouseup', handlePointerUp, true);
+    container.addEventListener('contextmenu', handleContextMenu, true);
 
     return () => {
       container.removeEventListener('mousedown', handlePointerDown, true);
       container.removeEventListener('mouseup', handlePointerUp, true);
+      container.removeEventListener('contextmenu', handleContextMenu, true);
     };
   }, []);
 
@@ -478,7 +520,7 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
         viewerRef.current.lookAt(
           activeScene.initialPitch || 0,
           activeScene.initialYaw || 0,
-          activeScene.initialHfov || 100,
+          settings?.initialWideFov ? 120 : (activeScene.initialHfov || 100),
           800
         );
       }
@@ -500,7 +542,7 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
 
   if (scenes.length === 0) {
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center bg-slate-950 text-slate-300 select-none">
+      <div key="empty-scenes-container" className="w-full h-full flex flex-col items-center justify-center p-8 text-center bg-slate-950 text-slate-300 select-none">
         <div className="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-sky-400 mb-4 shadow-xl">
           <MapPin className="w-8 h-8 opacity-90" />
         </div>
@@ -516,6 +558,7 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
 
   return (
     <div
+      key="active-panorama-container"
       className={`relative w-full h-full overflow-hidden select-none bg-slate-950 ${
         isCrosshairActive ? 'cursor-crosshair' : ''
       }`}

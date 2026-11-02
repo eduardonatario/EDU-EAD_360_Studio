@@ -4,7 +4,7 @@
  */
 
 import confetti from 'canvas-confetti';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Sparkles } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { ExportProgressModal } from './components/export/ExportProgressModal';
 import { HotspotEditor } from './components/hotspots/HotspotEditor';
@@ -13,7 +13,7 @@ import { TopBar } from './components/layout/TopBar';
 import { RoomNavigatorBottom } from './components/scenes/RoomNavigatorBottom';
 import { SceneList } from './components/scenes/SceneList';
 import { PannellumViewer } from './components/viewer/PannellumViewer';
-import { createModernHouseDemoProject } from './services/demo/demoProject';
+import { createModernHouseDemoProject, downloadDemoImages } from './services/demo/demoProject';
 import { generateStandaloneHTML } from './services/export/htmlGenerator';
 import { getAllProjectsFromDB, saveProjectToDB } from './services/storage/db';
 import {
@@ -36,7 +36,7 @@ export default function App() {
       const saved = localStorage.getItem('ead360_theme');
       if (saved === 'light' || saved === 'dark') return saved;
     }
-    return 'dark';
+    return 'light';
   });
 
   // Efeito de aplicação e persistência do tema claro/escuro
@@ -117,6 +117,17 @@ export default function App() {
 
   // Estado e Ação para "Criar Novo Tour" em branco
   const [isNewTourConfirmOpen, setIsNewTourConfirmOpen] = useState(false);
+  const [isSampleTourConfirmOpen, setIsSampleTourConfirmOpen] = useState(false);
+  const [isDownloadingDemo, setIsDownloadingDemo] = useState(false);
+
+  const handleDownloadDemoImages = async () => {
+    setIsDownloadingDemo(true);
+    try {
+      await downloadDemoImages();
+    } finally {
+      setIsDownloadingDemo(false);
+    }
+  };
 
   const handleConfirmNewTour = async () => {
     const emptyProject: TourProject = {
@@ -137,6 +148,11 @@ export default function App() {
     setIsAddingNewHotspot(false);
     setRepositionSession(null);
     setIsNewTourConfirmOpen(false);
+  };
+
+  const handleConfirmSampleTour = async () => {
+    await handleResetToDemo();
+    setIsSampleTourConfirmOpen(false);
   };
 
   // Salvar no IndexedDB sempre que o projeto for modificado
@@ -255,13 +271,19 @@ export default function App() {
   const handleSetNewCoordsForReposition = (coords: Coords360) => {
     if (!repositionSession?.targetHotspotId) return;
 
+    const pitch = Math.round(Math.max(-90, Math.min(90, coords.pitch)) * 2) / 2;
+    let yaw = coords.yaw;
+    while (yaw > 180) yaw -= 360;
+    while (yaw < -180) yaw += 360;
+    yaw = Math.round(yaw * 2) / 2;
+
     const targetId = repositionSession.targetHotspotId;
     const updatedScenes = project.scenes.map((s) => {
       if (s.id === activeScene.id) {
         return {
           ...s,
           hotspots: s.hotspots.map((h) =>
-            h.id === targetId ? { ...h, pitch: coords.pitch, yaw: coords.yaw } : h
+            h.id === targetId ? { ...h, pitch, yaw } : h
           ),
         };
       }
@@ -287,12 +309,18 @@ export default function App() {
   };
 
   const handleUpdateHotspotCoords = (sceneId: string, hotspotId: string, coords: Coords360) => {
+    const pitch = Math.round(Math.max(-90, Math.min(90, coords.pitch)) * 2) / 2;
+    let yaw = coords.yaw;
+    while (yaw > 180) yaw -= 360;
+    while (yaw < -180) yaw += 360;
+    yaw = Math.round(yaw * 2) / 2;
+
     let updatedHotspot: Hotspot | null = null;
     const updatedScenes = project.scenes.map((s) => {
       if (s.id !== sceneId) return s;
       const updatedHotspots = s.hotspots.map((h) => {
         if (h.id !== hotspotId) return h;
-        const upd = { ...h, pitch: coords.pitch, yaw: coords.yaw };
+        const upd = { ...h, pitch, yaw };
         updatedHotspot = upd;
         return upd;
       });
@@ -311,11 +339,17 @@ export default function App() {
   };
 
   const handlePlaceNewHotspotCoords = (coords: Coords360) => {
+    const pitch = Math.round(Math.max(-90, Math.min(90, coords.pitch)) * 2) / 2;
+    let yaw = coords.yaw;
+    while (yaw > 180) yaw -= 360;
+    while (yaw < -180) yaw += 360;
+    yaw = Math.round(yaw * 2) / 2;
+
     const newHotspot: Hotspot = {
       id: `hs-${Date.now()}`,
       type: 'info',
-      pitch: coords.pitch,
-      yaw: coords.yaw,
+      pitch,
+      yaw,
       title: 'Novo Ponto Informativo',
       description: 'Insira aqui as diretrizes educacionais ou detalhes do cômodo.',
       category: 'Arquitetura',
@@ -470,13 +504,17 @@ export default function App() {
         origin: { y: 0.6 },
       });
 
-      // Disparar download automático
+      // Disparar download automático de forma segura
       const a = document.createElement('a');
       a.href = url;
       a.download = filename;
       document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a);
+      setTimeout(() => {
+        if (a.parentNode === document.body) {
+          document.body.removeChild(a);
+        }
+      }, 100);
     } catch (err) {
       console.error('Erro na exportação:', err);
       setExportMessage('Ocorreu um erro ao gerar o arquivo.');
@@ -501,6 +539,9 @@ export default function App() {
         theme={theme}
         onToggleTheme={handleToggleTheme}
         onNewTour={() => setIsNewTourConfirmOpen(true)}
+        onLoadSampleTour={() => setIsSampleTourConfirmOpen(true)}
+        onDownloadDemoImages={handleDownloadDemoImages}
+        isDownloadingDemo={isDownloadingDemo}
       />
 
       {/* Área Central de Trabalho */}
@@ -520,7 +561,12 @@ export default function App() {
             onDeleteScene={handleDeleteScene}
             onSetInitialScene={handleSetInitialScene}
             onResetToDemo={handleResetToDemo}
-            onSelectHotspot={(hs) => setSelectedHotspot(hs)}
+            onSelectHotspot={(hs, sceneId) => {
+              if (sceneId && sceneId !== activeSceneId) {
+                setActiveSceneId(sceneId);
+              }
+              setSelectedHotspot(hs);
+            }}
             onStartPlacement={handleStartPlacement}
             onStartRepositionSession={handleStartRepositionSession}
             onDuplicateHotspot={handleDuplicateHotspot}
@@ -530,38 +576,59 @@ export default function App() {
         )}
 
         {/* Visualizador 360 Central (Pannellum WebGL Canvas) */}
-        <main className="flex-1 h-full relative overflow-hidden bg-slate-950">
-          <PannellumViewer
-            scenes={project.scenes}
-            activeSceneId={activeScene?.id || ''}
-            viewMode={viewMode}
-            settings={project.settings || DEFAULT_HOTSPOT_SETTINGS}
-            isAddingNewHotspot={isAddingNewHotspot}
-            repositionSession={repositionSession}
-            onSelectHotspotForReposition={handleSelectHotspotForReposition}
-            onPlaceNewHotspotCoords={handlePlaceNewHotspotCoords}
-            onSetNewCoordsForReposition={handleSetNewCoordsForReposition}
-            onCancelAction={handleCancelAction}
-            onSelectInfoHotspot={handleSelectInfoHotspot}
-            onNavigateScene={handleNavigateScene}
-            onUpdateHotspotCoords={handleUpdateHotspotCoords}
-            selectedHotspotId={selectedHotspot?.id}
-          />
-
-          {/* Navegador Rápido de Cômodos na Parte Inferior Central */}
-          {(project.settings?.showBottomRoomBar ?? false) && project.scenes.length > 0 && (
-            <RoomNavigatorBottom
+        <main className="flex-1 h-full relative overflow-hidden bg-slate-950 flex items-center justify-center p-0">
+          <div
+            className={`relative overflow-hidden transition-all duration-300 flex items-center justify-center ${
+              project.settings?.viewportFormat === '16:9'
+                ? 'aspect-[16/9] w-full max-w-[1920px] max-h-[1080px] h-auto shadow-2xl rounded-xl border border-slate-800'
+                : project.settings?.viewportFormat === '9:16'
+                ? 'aspect-[9/16] h-full max-h-[1920px] max-w-[1080px] w-auto shadow-2xl rounded-xl border border-slate-800'
+                : project.settings?.viewportFormat === 'custom'
+                ? 'shadow-2xl rounded-xl border border-slate-800 max-w-full max-h-full'
+                : 'w-full h-full'
+            }`}
+            style={
+              project.settings?.viewportFormat === 'custom'
+                ? {
+                    width: `${project.settings.customWidth || 1920}px`,
+                    height: `${project.settings.customHeight || 1080}px`,
+                  }
+                : undefined
+            }
+          >
+            <PannellumViewer
               scenes={project.scenes}
               activeSceneId={activeScene?.id || ''}
-              onSelectScene={handleSelectScene}
-              showHotspotCount={project.settings?.showRoomBarHotspotCount ?? false}
+              viewMode={viewMode}
+              settings={project.settings || DEFAULT_HOTSPOT_SETTINGS}
+              isAddingNewHotspot={isAddingNewHotspot}
+              repositionSession={repositionSession}
+              onSelectHotspotForReposition={handleSelectHotspotForReposition}
+              onPlaceNewHotspotCoords={handlePlaceNewHotspotCoords}
+              onSetNewCoordsForReposition={handleSetNewCoordsForReposition}
+              onCancelAction={handleCancelAction}
+              onSelectInfoHotspot={handleSelectInfoHotspot}
+              onNavigateScene={handleNavigateScene}
+              onUpdateHotspotCoords={handleUpdateHotspotCoords}
+              selectedHotspotId={selectedHotspot?.id}
             />
-          )}
+
+            {/* Navegador Rápido de Cômodos na Parte Inferior Central */}
+            {(project.settings?.showBottomRoomBar ?? false) && project.scenes.length > 0 && (
+              <RoomNavigatorBottom
+                scenes={project.scenes}
+                activeSceneId={activeScene?.id || ''}
+                onSelectScene={handleSelectScene}
+                showHotspotCount={project.settings?.showRoomBarHotspotCount ?? false}
+              />
+            )}
+          </div>
         </main>
 
         {/* Painel Direito: Inspetor / Editor de Hotspot quando selecionado */}
         {viewMode === 'editor' && selectedHotspot && activeScene && (
           <HotspotEditor
+            key={selectedHotspot.id}
             hotspot={selectedHotspot}
             currentSceneId={activeScene.id}
             allScenes={project.scenes}
@@ -620,6 +687,48 @@ export default function App() {
                 className="px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-sky-600 hover:bg-sky-500 shadow-sm cursor-pointer transition-colors"
               >
                 Sim, Criar Novo Tour
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação para "Exibir Ambiente Modelo" */}
+      {isSampleTourConfirmOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md p-5 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-800 flex items-center justify-center text-sky-600 dark:text-sky-400 shrink-0">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                  Exibir ambiente modelo?
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Carregar tour de demonstração com todos os cômodos
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              Deseja carregar o tour virtual modelo com todos os ambientes e hotspots de exemplo? Se houver alterações não salvas no tour atual, elas serão substituídas pelo modelo.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setIsSampleTourConfirmOpen(false)}
+                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmSampleTour}
+                className="px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-sky-600 hover:bg-sky-500 shadow-sm cursor-pointer transition-colors"
+              >
+                Sim, Exibir Modelo
               </button>
             </div>
           </div>

@@ -5,8 +5,6 @@
 
 import {
   Copy,
-  Crosshair,
-  ExternalLink,
   Image as ImageIcon,
   Info,
   Link as LinkIcon,
@@ -29,6 +27,12 @@ const ARROW_OPTIONS: { id: ArrowDirection; label: string; glyph: string }[] = [
   { id: 'door', label: 'Porta', glyph: '🚪' },
 ];
 
+function roundToValidHalf(val: number, min: number, max: number): number {
+  const num = Number(val) || 0;
+  const clamped = Math.max(min, Math.min(max, num));
+  return Math.round(clamped * 2) / 2;
+}
+
 interface HotspotEditorProps {
   hotspot: Hotspot;
   currentSceneId: string;
@@ -37,7 +41,7 @@ interface HotspotEditorProps {
   onDuplicate: (hotspot: Hotspot) => void;
   onDelete: (hotspotId: string) => void;
   onClose: () => void;
-  onStartReposition: () => void;
+  onStartReposition?: () => void;
   onNavigateToScene?: (sceneId: string) => void;
 }
 
@@ -49,7 +53,7 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
   onDuplicate,
   onDelete,
   onClose,
-  onStartReposition,
+  onStartReposition: _onStartReposition,
   onNavigateToScene,
 }) => {
   const [type, setType] = useState<HotspotType>(hotspot.type);
@@ -66,6 +70,7 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
   );
   const [customColor, setCustomColor] = useState(hotspot.customColor || '');
   const [arrowColor, setArrowColor] = useState(hotspot.arrowColor || '');
+  const [imageOnly, setImageOnly] = useState(hotspot.imageOnly || false);
 
   // Sincronizar campos sempre que o hotspot for reposicionado, arrastado ou trocado
   React.useEffect(() => {
@@ -79,6 +84,7 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
     setArrowDirection(hotspot.arrowDirection || 'right');
     setCustomColor(hotspot.customColor || '');
     setArrowColor(hotspot.arrowColor || '');
+    setImageOnly(hotspot.imageOnly || false);
   }, [hotspot, currentSceneId, allScenes]);
 
   // Controle de modo de inserção de imagem: 'upload' ou 'url'
@@ -118,10 +124,11 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
       ...hotspot,
       type,
       title: title.trim() || (type === 'info' ? 'Hotspot informativo' : 'Seta para novo cômodo'),
-      pitch: Number(pitch) || 0,
-      yaw: Number(yaw) || 0,
+      pitch: roundToValidHalf(pitch, -90, 90),
+      yaw: roundToValidHalf(yaw, -180, 180),
       description: type === 'info' ? description : undefined,
       imageUrl: type === 'info' ? imageUrl : undefined,
+      imageOnly: type === 'info' ? imageOnly : undefined,
       customColor: customColor || undefined,
       targetSceneId: type === 'scene' ? targetSceneId : undefined,
       targetPitch: type === 'scene' ? 0 : undefined,
@@ -221,14 +228,9 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
         {type === 'scene' && (
           <div className="space-y-3 p-3 bg-emerald-500/5 dark:bg-emerald-950/20 rounded-xl border border-emerald-500/20">
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-[11px] font-semibold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider">
-                  Cômodo de Destino
-                </label>
-                <span className="text-[10px] text-emerald-600 dark:text-emerald-500 font-medium">
-                  Conexão 360º
-                </span>
-              </div>
+              <label className="block text-[11px] font-semibold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider mb-1.5">
+                Cômodo de Destino
+              </label>
 
               {destinationOptions.length === 0 ? (
                 <div className="text-rose-600 dark:text-rose-400 text-[11px] bg-rose-50 dark:bg-rose-950/40 p-2.5 rounded-lg border border-rose-200 dark:border-rose-900/50">
@@ -268,7 +270,20 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
                   <input
                     type="color"
                     value={arrowColor || '#ffffff'}
-                    onChange={(e) => setArrowColor(e.target.value)}
+                    onChange={(e) => {
+                      const newColor = e.target.value;
+                      setArrowColor(newColor);
+                      onSave({
+                        ...hotspot,
+                        type: 'scene',
+                        title: title.trim() || 'Seta para novo cômodo',
+                        pitch: Number(pitch) || 0,
+                        yaw: Number(yaw) || 0,
+                        arrowDirection,
+                        arrowColor: newColor,
+                        targetSceneId,
+                      });
+                    }}
                     className="w-4 h-4 rounded cursor-pointer border border-slate-300 dark:border-slate-700 bg-transparent p-0"
                     title="Cor da seta"
                   />
@@ -281,7 +296,19 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
                     <button
                       key={dir.id}
                       type="button"
-                      onClick={() => setArrowDirection(dir.id)}
+                      onClick={() => {
+                        setArrowDirection(dir.id);
+                        onSave({
+                          ...hotspot,
+                          type: 'scene',
+                          title: title.trim() || 'Seta para novo cômodo',
+                          pitch: Number(pitch) || 0,
+                          yaw: Number(yaw) || 0,
+                          arrowDirection: dir.id,
+                          arrowColor: arrowColor || undefined,
+                          targetSceneId,
+                        });
+                      }}
                       className={`p-1.5 rounded-lg flex flex-col items-center justify-center transition-all cursor-pointer border ${
                         isSelected
                           ? 'bg-emerald-600 text-white font-bold border-emerald-500 shadow-xs'
@@ -461,6 +488,24 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
                 </div>
               )}
             </div>
+
+            {/* Opção para exibir apenas imagem no quadro */}
+            <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800/80">
+              <label className="flex items-center justify-between cursor-pointer group">
+                <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                  Preencher quadro apenas com a imagem
+                </span>
+                <input
+                  type="checkbox"
+                  checked={imageOnly}
+                  onChange={(e) => setImageOnly(e.target.checked)}
+                  className="w-4 h-4 text-sky-600 rounded cursor-pointer accent-sky-600"
+                />
+              </label>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-0.5">
+                Ao clicar no hotspot, exibe apenas a imagem preenchendo o quadro de informação.
+              </span>
+            </div>
           </>
         )}
 
@@ -470,15 +515,6 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
             <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Orientação espacial
             </span>
-            <button
-              type="button"
-              onClick={onStartReposition}
-              className="text-[11px] text-amber-600 dark:text-amber-400 hover:text-amber-500 font-semibold flex items-center gap-1 cursor-pointer"
-              title="Clique para editar a posição deste hotspot na imagem 360°"
-            >
-              <Crosshair className="w-3.5 h-3.5" />
-              <span>Editar hotspot</span>
-            </button>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
@@ -493,6 +529,7 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
                 step={0.5}
                 value={pitch}
                 onChange={(e) => setPitch(Number(e.target.value))}
+                onBlur={(e) => setPitch(roundToValidHalf(Number(e.target.value), -90, 90))}
                 className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md px-2.5 py-1.5 text-slate-900 dark:text-slate-100 font-mono tabular-nums text-xs transition-colors"
               />
             </div>
@@ -507,6 +544,12 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
                 step={0.5}
                 value={yaw}
                 onChange={(e) => setYaw(Number(e.target.value))}
+                onBlur={(e) => {
+                  let num = Number(e.target.value) || 0;
+                  while (num > 180) num -= 360;
+                  while (num < -180) num += 360;
+                  setYaw(roundToValidHalf(num, -180, 180));
+                }}
                 className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md px-2.5 py-1.5 text-slate-900 dark:text-slate-100 font-mono tabular-nums text-xs transition-colors"
               />
             </div>
