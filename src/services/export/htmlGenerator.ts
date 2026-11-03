@@ -621,13 +621,16 @@ export async function generateStandaloneHTML(
         if (!hotspot) return;
 
         if (modal) {
+          var effectiveBlur = (tourData.settings && tourData.settings.backdropBlur) || hotspot.backdropBlur || 'low';
+          var effectiveTheme = (tourData.settings && tourData.settings.cardTheme) || hotspot.cardTheme || 'light';
+
           modal.classList.remove('blur-none', 'blur-low', 'blur-medium', 'blur-high');
-          modal.classList.add('blur-' + (hotspot.backdropBlur || 'medium'));
+          modal.classList.add('blur-' + effectiveBlur);
 
           var modalCard = modal.querySelector('.edu-modal-card');
           if (modalCard) {
             modalCard.classList.remove('theme-light', 'theme-dark');
-            modalCard.classList.add(hotspot.cardTheme === 'dark' ? 'theme-dark' : 'theme-light');
+            modalCard.classList.add(effectiveTheme === 'dark' ? 'theme-dark' : 'theme-light');
           }
         }
 

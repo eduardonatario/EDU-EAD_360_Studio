@@ -16,10 +16,12 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   Compass,
   Copy,
   DoorOpen,
   Edit2,
+  GripVertical,
   Home,
   Info,
   Layers,
@@ -44,6 +46,7 @@ import {
   Hotspot,
   Scene,
 } from '../../types/tour';
+import { compressDataUrl } from '../../services/image/compressor';
 
 interface SceneListProps {
   scenes: Scene[];
@@ -57,6 +60,8 @@ interface SceneListProps {
   onUpdateScene: (sceneId: string, updates: Partial<Scene>) => void;
   onDeleteScene: (sceneId: string) => void;
   onSetInitialScene: (sceneId: string) => void;
+  onReorderScenes?: (scenes: Scene[]) => void;
+  onMoveScene?: (sceneId: string, direction: 'up' | 'down') => void;
   onResetToDemo?: () => void;
   // Ações de hotspots aninhadas
   onSelectHotspot?: (hotspot: Hotspot, sceneId?: string) => void;
@@ -116,6 +121,8 @@ export const SceneList: React.FC<SceneListProps> = ({
   onUpdateScene,
   onDeleteScene,
   onSetInitialScene,
+  onReorderScenes,
+  onMoveScene,
   onResetToDemo,
   onSelectHotspot,
   onStartPlacement,
@@ -136,6 +143,44 @@ export const SceneList: React.FC<SceneListProps> = ({
 
   // Estado para recolher/retrair cômodos individualmente
   const [collapsedScenes, setCollapsedScenes] = useState<Record<string, boolean>>({});
+
+  // Estado para reordenação drag & drop de ambientes
+  const [draggedSceneIndex, setDraggedSceneIndex] = useState<number | null>(null);
+  const [dragOverSceneIndex, setDragOverSceneIndex] = useState<number | null>(null);
+
+  const handleDragStart = (index: number, e: React.DragEvent) => {
+    setDraggedSceneIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(index));
+  };
+
+  const handleDragOver = (index: number, e: React.DragEvent) => {
+    e.preventDefault();
+    if (draggedSceneIndex === null || draggedSceneIndex === index) return;
+    setDragOverSceneIndex(index);
+  };
+
+  const handleDrop = (targetIndex: number, e: React.DragEvent) => {
+    e.preventDefault();
+    if (draggedSceneIndex === null || draggedSceneIndex === targetIndex) {
+      setDraggedSceneIndex(null);
+      setDragOverSceneIndex(null);
+      return;
+    }
+
+    const reordered = [...scenes];
+    const [removed] = reordered.splice(draggedSceneIndex, 1);
+    reordered.splice(targetIndex, 0, removed);
+
+    onReorderScenes?.(reordered);
+    setDraggedSceneIndex(null);
+    setDragOverSceneIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedSceneIndex(null);
+    setDragOverSceneIndex(null);
+  };
 
   // Estado para troca de imagem 360 do cômodo
   const [changingImageScene, setChangingImageScene] = useState<Scene | null>(null);
@@ -183,15 +228,26 @@ export const SceneList: React.FC<SceneListProps> = ({
       `Cômodo ${scenes.length + 1}`;
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       const result = event.target?.result as string;
       if (result) {
+        let finalImage = result;
+        try {
+          finalImage = await compressDataUrl(result, {
+            maxWidth: 4096,
+            maxHeight: 2048,
+            quality: 0.88,
+          });
+        } catch {
+          // fallback
+        }
+
         const newSceneId = `scene-${Date.now()}`;
         const newScene: Scene = {
           id: newSceneId,
           name: finalName,
           description: 'Ambiente panorâmico 360°.',
-          imageUrl: result,
+          imageUrl: finalImage,
           initialPitch: 0,
           initialYaw: 0,
           initialHfov: 100,
@@ -279,7 +335,7 @@ export const SceneList: React.FC<SceneListProps> = ({
         </button>
 
         {isGeneralSettingsOpen && (
-          <div className="px-3.5 pb-4 pt-1 space-y-3.5 text-xs border-t border-slate-200/80 dark:border-slate-800/80 animate-in fade-in duration-150">
+          <div className="px-3.5 pb-4 pt-1 space-y-3.5 text-xs border-t border-slate-200/80 dark:border-slate-800/80 animate-in fade-in duration-150 max-h-[52vh] overflow-y-auto overscroll-contain pr-2">
             {/* Opção 1: Cor dos Hotspots Informativos */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
@@ -552,6 +608,79 @@ export const SceneList: React.FC<SceneListProps> = ({
                 Abre o campo de visão panorâmico no máximo (grande angular / visão ampla).
               </span>
             </div>
+
+            {/* Opção 9: Cor do quadro informativo (reflete em todos os ambientes) */}
+            <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800/80 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                  Fundo do quadro informativo
+                </span>
+                <span className="text-[10px] text-slate-400">
+                  {settings.cardTheme === 'dark' ? 'Tema Escuro' : 'Tema Claro'}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => updateSetting('cardTheme', 'light')}
+                  className={`px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                    (settings.cardTheme ?? 'light') === 'light'
+                      ? 'bg-sky-50 dark:bg-sky-950/60 border-sky-500 text-sky-700 dark:text-sky-300 shadow-2xs font-bold'
+                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                  }`}
+                >
+                  <span>☀️ Claro (Padrão)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateSetting('cardTheme', 'dark')}
+                  className={`px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                    settings.cardTheme === 'dark'
+                      ? 'bg-sky-50 dark:bg-sky-950/60 border-sky-500 text-sky-700 dark:text-sky-300 shadow-2xs font-bold'
+                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                  }`}
+                >
+                  <span>🌙 Escuro</span>
+                </button>
+              </div>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 block">
+                Define o fundo claro ou escuro dos quadros de informação em todos os ambientes.
+              </span>
+            </div>
+
+            {/* Opção 10: Desfoque do fundo ao abrir o quadro (reflete em todos os ambientes) */}
+            <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800/80 space-y-1.5">
+              <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block">
+                Desfoque do fundo ao abrir o quadro
+              </span>
+              <div className="grid grid-cols-2 gap-1.5">
+                {[
+                  { id: 'none', label: 'Sem desfoque' },
+                  { id: 'low', label: 'Pouco desfocado (Padrão)' },
+                  { id: 'medium', label: 'Desfoque médio' },
+                  { id: 'high', label: 'Muito desfocado' },
+                ].map((opt) => {
+                  const isSelected = (settings.backdropBlur ?? 'low') === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => updateSetting('backdropBlur', opt.id as any)}
+                      className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-medium flex items-center justify-center text-center cursor-pointer transition-all ${
+                        isSelected
+                          ? 'bg-sky-50 dark:bg-sky-950/60 border-sky-500 text-sky-700 dark:text-sky-300 font-bold shadow-2xs'
+                          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                      }`}
+                    >
+                      <span>{opt.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 block">
+                Define a intensidade do desfoque do ambiente 360° ao abrir o quadro em todos os cômodos.
+              </span>
+            </div>
           </div>
         )}
       </div>
@@ -706,11 +835,13 @@ export const SceneList: React.FC<SceneListProps> = ({
             </button>
           </div>
         ) : (
-          scenes.map((scene) => {
+          scenes.map((scene, index) => {
             const isActive = scene.id === activeSceneId;
             const isExpanded = isActive && !collapsedScenes[scene.id];
             const isInitial = scene.id === initialSceneId;
             const isRenaming = editingSceneId === scene.id;
+            const isBeingDragged = draggedSceneIndex === index;
+            const isOverTarget = dragOverSceneIndex === index && draggedSceneIndex !== index;
 
             const infoHotspots = scene.hotspots.filter((h) => h.type === 'info');
             const portalHotspots = scene.hotspots.filter((h) => h.type === 'scene');
@@ -718,8 +849,17 @@ export const SceneList: React.FC<SceneListProps> = ({
             return (
               <div
                 key={scene.id}
+                draggable={!isRenaming && scenes.length > 1}
+                onDragStart={(e) => handleDragStart(index, e)}
+                onDragOver={(e) => handleDragOver(index, e)}
+                onDrop={(e) => handleDrop(index, e)}
+                onDragEnd={handleDragEnd}
                 className={`rounded-xl border transition-all ${
-                  isActive
+                  isOverTarget
+                    ? 'border-sky-500 ring-2 ring-sky-500/50 scale-[1.01]'
+                    : isBeingDragged
+                    ? 'opacity-40 border-dashed border-slate-400'
+                    : isActive
                     ? 'border-sky-500 bg-sky-50/40 dark:bg-slate-850 shadow-sm ring-1 ring-sky-500/20'
                     : 'border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/40 hover:border-slate-300 dark:hover:border-slate-700'
                 }`}
@@ -727,8 +867,19 @@ export const SceneList: React.FC<SceneListProps> = ({
                 {/* Card do Cômodo */}
                 <div
                   onClick={(e) => handleToggleRoom(scene.id, e)}
-                  className="p-2.5 flex items-start gap-2.5 cursor-pointer group"
+                  className="p-2.5 flex items-start gap-2 cursor-pointer group"
                 >
+                  {/* Puxador para Reordenar / Grip */}
+                  {scenes.length > 1 && (
+                    <div
+                      className="self-center -ml-1 text-slate-300 dark:text-slate-600 hover:text-sky-500 dark:hover:text-sky-400 cursor-grab active:cursor-grabbing p-1 transition-colors shrink-0"
+                      title="Arraste para alterar a ordem deste ambiente virtual"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <GripVertical className="w-3.5 h-3.5" />
+                    </div>
+                  )}
+
                   {/* Miniatura do Cômodo com opção de Trocar Imagem ao Clicar */}
                   <div
                     onClick={(e) => {
@@ -785,13 +936,47 @@ export const SceneList: React.FC<SceneListProps> = ({
                     ) : (
                       <>
                         <div className="flex items-center justify-between gap-1">
-                          <span
-                            className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate block hover:text-sky-600 dark:hover:text-sky-400 transition-colors"
-                            title={isExpanded ? 'Clique para retrair o menu deste cômodo' : 'Clique para abrir o menu deste cômodo'}
-                          >
-                            {scene.name}
-                          </span>
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-400 shrink-0">
+                              #{index + 1}
+                            </span>
+                            <span
+                              className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate block hover:text-sky-600 dark:hover:text-sky-400 transition-colors"
+                              title={isExpanded ? 'Clique para retrair o menu deste cômodo' : 'Clique para abrir o menu deste cômodo'}
+                            >
+                              {scene.name}
+                            </span>
+                          </div>
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                            {/* Botões para Reordenar Ambiente para Cima ou para Baixo */}
+                            {scenes.length > 1 && (
+                              <>
+                                <button
+                                  type="button"
+                                  disabled={index === 0}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onMoveScene?.(scene.id, 'up');
+                                  }}
+                                  className="p-1 text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 disabled:opacity-20 disabled:hover:text-slate-400 rounded hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer disabled:cursor-not-allowed transition-colors"
+                                  title={index === 0 ? 'Primeiro cômodo' : 'Mover cômodo para cima'}
+                                >
+                                  <ChevronUp className="w-3 h-3" />
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={index === scenes.length - 1}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onMoveScene?.(scene.id, 'down');
+                                  }}
+                                  className="p-1 text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 disabled:opacity-20 disabled:hover:text-slate-400 rounded hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer disabled:cursor-not-allowed transition-colors"
+                                  title={index === scenes.length - 1 ? 'Último cômodo' : 'Mover cômodo para baixo'}
+                                >
+                                  <ChevronDown className="w-3 h-3" />
+                                </button>
+                              </>
+                            )}
                             <button
                               type="button"
                               onClick={(e) => handleStartRename(scene, e)}
@@ -1154,10 +1339,20 @@ export const SceneList: React.FC<SceneListProps> = ({
                     const file = e.target.files?.[0];
                     if (!file) return;
                     const reader = new FileReader();
-                    reader.onload = (ev) => {
+                    reader.onload = async (ev) => {
                       const res = ev.target?.result as string;
                       if (res) {
-                        onUpdateScene(changingImageScene.id, { imageUrl: res });
+                        let finalImg = res;
+                        try {
+                          finalImg = await compressDataUrl(res, {
+                            maxWidth: 4096,
+                            maxHeight: 2048,
+                            quality: 0.88,
+                          });
+                        } catch {
+                          // fallback
+                        }
+                        onUpdateScene(changingImageScene.id, { imageUrl: finalImg });
                         setChangingImageScene(null);
                       }
                     };

@@ -20,13 +20,24 @@ export function compressDataUrl(
 ): Promise<string> {
   const { maxWidth = 3840, maxHeight = 1920, quality = 0.82 } = options;
 
-  return new Promise((resolve, reject) => {
+  if (!dataUrl) return Promise.resolve(dataUrl);
+
+  return new Promise((resolve) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+
+    // Apenas define crossOrigin para URLs remotas HTTP/HTTPS
+    if (dataUrl.startsWith('http://') || dataUrl.startsWith('https://')) {
+      img.crossOrigin = 'anonymous';
+    }
 
     img.onload = () => {
       let w = img.width;
       let h = img.height;
+
+      if (!w || !h) {
+        resolve(dataUrl);
+        return;
+      }
 
       // Manter proporção 2:1 ou proporção original
       if (w > maxWidth || h > maxHeight) {
@@ -40,8 +51,8 @@ export function compressDataUrl(
       h = h % 2 === 0 ? h : h - 1;
 
       const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
+      canvas.width = Math.max(2, w);
+      canvas.height = Math.max(2, h);
 
       const ctx = canvas.getContext('2d');
       if (!ctx) {
@@ -57,14 +68,13 @@ export function compressDataUrl(
       try {
         const compressed = canvas.toDataURL('image/jpeg', quality);
         resolve(compressed);
-      } catch (err) {
-        console.warn('Erro ao comprimir imagem no canvas, usando original:', err);
+      } catch {
         resolve(dataUrl);
       }
     };
 
-    img.onerror = (e) => {
-      console.error('Falha ao carregar imagem para compressão:', e);
+    img.onerror = () => {
+      console.warn('Aviso: Imagem mantida no formato original (sem recompressão):', dataUrl.slice(0, 50));
       resolve(dataUrl);
     };
 

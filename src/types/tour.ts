@@ -74,6 +74,8 @@ export interface GlobalHotspotSettings {
   customWidth?: number;       // Largura para formato personalizado (px)
   customHeight?: number;      // Altura para formato personalizado (px)
   initialWideFov?: boolean;   // Iniciar ambiente com imagem mais aberta possível (visão ampla)
+  cardTheme?: HotspotCardTheme;      // Fundo do quadro de informações em todos os cômodos ('light' | 'dark')
+  backdropBlur?: HotspotBackdropBlur; // Nível de desfoque de fundo ao abrir quadro em todos os cômodos ('none' | 'low' | 'medium' | 'high')
 }
 
 export const DEFAULT_HOTSPOT_SETTINGS: GlobalHotspotSettings = {
@@ -89,6 +91,8 @@ export const DEFAULT_HOTSPOT_SETTINGS: GlobalHotspotSettings = {
   customWidth: 1920,
   customHeight: 1080,
   initialWideFov: false,
+  cardTheme: 'light',
+  backdropBlur: 'low',
 };
 
 export type HotspotCardTheme = 'light' | 'dark';

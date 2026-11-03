@@ -5,10 +5,11 @@
 
 import { X } from 'lucide-react';
 import React from 'react';
-import { Hotspot } from '../../types/tour';
+import { Hotspot, GlobalHotspotSettings } from '../../types/tour';
 
 interface HotspotModalProps {
   hotspot: Hotspot | null;
+  settings?: GlobalHotspotSettings;
   onClose: () => void;
 }
 
@@ -21,16 +22,18 @@ function getBackdropBlurClass(blur?: string): string {
     case 'high':
       return 'backdrop-blur-xl bg-slate-950/80';
     case 'medium':
-    default:
       return 'backdrop-blur-md bg-slate-950/70';
+    case 'low':
+    default:
+      return 'backdrop-blur-xs bg-slate-950/50';
   }
 }
 
-export const HotspotModal: React.FC<HotspotModalProps> = ({ hotspot, onClose }) => {
+export const HotspotModal: React.FC<HotspotModalProps> = ({ hotspot, settings, onClose }) => {
   if (!hotspot) return null;
 
-  const isDark = hotspot.cardTheme === 'dark';
-  const backdropClass = getBackdropBlurClass(hotspot.backdropBlur);
+  const isDark = (settings?.cardTheme ?? 'light') === 'dark';
+  const backdropClass = getBackdropBlurClass(settings?.backdropBlur ?? 'low');
 
   // Modo Apenas Imagem preenchendo o quadro de informação
   if (hotspot.imageOnly && hotspot.imageUrl) {

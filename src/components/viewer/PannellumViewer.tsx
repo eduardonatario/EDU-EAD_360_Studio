@@ -467,6 +467,15 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
 
       // Apenas se o usuário não estava arrastando a visão da câmera (movimento menor que 7px)
       if (deltaX < 7 && deltaY < 7 && viewerRef.current) {
+        // Verificar se o visualizador está pronto e com canvas WebGL ativo
+        try {
+          if (typeof viewerRef.current.isLoaded === 'function' && !viewerRef.current.isLoaded()) {
+            return;
+          }
+        } catch {
+          return;
+        }
+
         // Se estiver no PASSO 2 de reposicionamento (aguardando novo clique na imagem para fixar)
         if (repositionSessionRef.current?.step === 'select_position') {
           e.stopPropagation();
@@ -479,7 +488,7 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
               onSetNewCoordsForRepositionRef.current({ pitch, yaw });
             }
           } catch (err) {
-            console.error('Erro ao converter clique para coordenadas de reposicionamento:', err);
+            console.warn('Pannellum canvas em carregamento durante reposicionamento:', err);
           }
           return;
         }
@@ -496,7 +505,7 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
               onPlaceNewHotspotCoordsRef.current({ pitch, yaw });
             }
           } catch (err) {
-            console.error('Erro ao converter clique para novas coordenadas:', err);
+            console.warn('Pannellum canvas em carregamento ao adicionar hotspot:', err);
           }
         }
       }

@@ -257,6 +257,28 @@ export default function App() {
     persistProject(updated);
   };
 
+  const handleReorderScenes = (reorderedScenes: Scene[]) => {
+    const updated: TourProject = {
+      ...project,
+      scenes: reorderedScenes,
+    };
+    persistProject(updated);
+  };
+
+  const handleMoveScene = (sceneId: string, direction: 'up' | 'down') => {
+    const currentIndex = project.scenes.findIndex((s) => s.id === sceneId);
+    if (currentIndex === -1) return;
+    if (direction === 'up' && currentIndex === 0) return;
+    if (direction === 'down' && currentIndex === project.scenes.length - 1) return;
+
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    const reordered = [...project.scenes];
+    const [moved] = reordered.splice(currentIndex, 1);
+    reordered.splice(targetIndex, 0, moved);
+
+    handleReorderScenes(reordered);
+  };
+
   // Gerenciamento de Inserção e Reposicionamento de Hotspots
   const handleStartPlacement = () => {
     setIsAddingNewHotspot(true);
@@ -368,7 +390,7 @@ export default function App() {
       description: 'Insira aqui as diretrizes educacionais ou detalhes do cômodo.',
       category: 'Arquitetura',
       cardTheme: 'light',
-      backdropBlur: 'medium',
+      backdropBlur: 'low',
     };
 
     const updatedScenes = project.scenes.map((s) => {
@@ -576,6 +598,8 @@ export default function App() {
             onUpdateScene={handleUpdateScene}
             onDeleteScene={handleDeleteScene}
             onSetInitialScene={handleSetInitialScene}
+            onReorderScenes={handleReorderScenes}
+            onMoveScene={handleMoveScene}
             onResetToDemo={handleResetToDemo}
             onSelectHotspot={(hs, sceneId) => {
               if (sceneId && sceneId !== activeSceneId) {
@@ -661,6 +685,7 @@ export default function App() {
       {/* Modal Educativo do Aluno ao Clicar em Hotspot de Informação */}
       <HotspotModal
         hotspot={activeInfoModalHotspot}
+        settings={project.settings}
         onClose={() => setActiveInfoModalHotspot(null)}
       />
 
