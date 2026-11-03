@@ -304,38 +304,40 @@ export const SceneList: React.FC<SceneListProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 w-84 shrink-0 select-none text-slate-800 dark:text-slate-200 transition-colors shadow-sm">
-      {/* 1. SEÇÃO DE OPÇÕES GERAIS (ACIMA DO MENU AMBIENTES VIRTUAIS) */}
-      <div className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/40">
-        <button
-          type="button"
-          onClick={() => setIsGeneralSettingsOpen(!isGeneralSettingsOpen)}
-          className="w-full p-3.5 flex items-center justify-between text-left hover:bg-slate-100 dark:hover:bg-slate-900/80 transition-colors cursor-pointer"
-        >
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-sky-500/15 text-sky-600 dark:text-sky-400 flex items-center justify-center">
-              <SlidersHorizontal className="w-3.5 h-3.5" />
+    <div className="flex flex-col h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 w-84 shrink-0 select-none text-slate-800 dark:text-slate-200 transition-colors shadow-sm overflow-hidden">
+      {/* Contêiner de Scroll Unificado: Opções Gerais e Ambientes Virtuais fluem juntos sem menus fixos */}
+      <div className="flex-1 overflow-y-auto overscroll-contain">
+        {/* 1. SEÇÃO DE OPÇÕES GERAIS (ACIMA DO MENU AMBIENTES VIRTUAIS) */}
+        <div className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/40">
+          <button
+            type="button"
+            onClick={() => setIsGeneralSettingsOpen(!isGeneralSettingsOpen)}
+            className="w-full p-3.5 flex items-center justify-between text-left hover:bg-slate-100 dark:hover:bg-slate-900/80 transition-colors cursor-pointer"
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-md bg-sky-500/15 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+              </div>
+              <div>
+                <span className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider block leading-tight">
+                  Opções Gerais
+                </span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block -mt-0.5">
+                  Personalize cores, setas, controles, menus e formato
+                </span>
+              </div>
             </div>
-            <div>
-              <span className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider block leading-tight">
-                Opções Gerais
-              </span>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 block -mt-0.5">
-                Personalize cores, setas, controles, menus e formato
-              </span>
+            <div className="text-slate-400">
+              {isGeneralSettingsOpen ? (
+                <ChevronDown className="w-4 h-4" />
+              ) : (
+                <ChevronRight className="w-4 h-4" />
+              )}
             </div>
-          </div>
-          <div className="text-slate-400">
-            {isGeneralSettingsOpen ? (
-              <ChevronDown className="w-4 h-4" />
-            ) : (
-              <ChevronRight className="w-4 h-4" />
-            )}
-          </div>
-        </button>
+          </button>
 
-        {isGeneralSettingsOpen && (
-          <div className="px-3.5 pb-4 pt-1 space-y-3.5 text-xs border-t border-slate-200/80 dark:border-slate-800/80 animate-in fade-in duration-150 max-h-[52vh] overflow-y-auto overscroll-contain pr-2">
+          {isGeneralSettingsOpen && (
+            <div className="px-3.5 pb-4 pt-1 space-y-3.5 text-xs border-t border-slate-200/80 dark:border-slate-800/80 animate-in fade-in duration-150">
             {/* Opção 1: Cor dos Hotspots Informativos */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
@@ -451,7 +453,26 @@ export const SceneList: React.FC<SceneListProps> = ({
               </span>
             </div>
 
-            {/* Opção 6: Exibir menu de navegação com nome dos espaços na parte inferior central */}
+            {/* Opção 6: Exibir botão de Início (Home) nos controles */}
+            <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800/80">
+              <label className="flex items-center justify-between cursor-pointer group">
+                <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Home className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Exibir ícone de Início (Home)</span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={settings.showHomeButton ?? true}
+                  onChange={(e) => updateSetting('showHomeButton', e.target.checked)}
+                  className="w-4 h-4 text-sky-600 rounded cursor-pointer accent-sky-600"
+                />
+              </label>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-0.5">
+                Ícone de casa nos controles flutuantes para que o usuário volte ao primeiro ambiente a qualquer momento.
+              </span>
+            </div>
+
+            {/* Opção 7: Exibir menu de navegação com nome dos espaços na parte inferior central */}
             <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800/80 space-y-2">
               <label className="flex items-center justify-between cursor-pointer group">
                 <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
@@ -489,7 +510,7 @@ export const SceneList: React.FC<SceneListProps> = ({
               )}
             </div>
 
-            {/* Opção 7: Formato e Tamanho do Espaço de Navegação */}
+            {/* Opção 8: Formato e Tamanho do Espaço de Navegação */}
             <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800/80 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
@@ -497,8 +518,8 @@ export const SceneList: React.FC<SceneListProps> = ({
                   <span>Formato do Espaço de Navegação</span>
                 </span>
                 <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                  {settings.viewportFormat === '16:9'
-                    ? '16:9 (1920×1080)'
+                  {(settings.viewportFormat ?? '16:9') === '16:9'
+                    ? '16:9 (1920×1080) · Padrão'
                     : settings.viewportFormat === '9:16'
                     ? '9:16 (1080×1920)'
                     : settings.viewportFormat === 'custom'
@@ -509,27 +530,30 @@ export const SceneList: React.FC<SceneListProps> = ({
               <div className="grid grid-cols-2 gap-1.5">
                 <button
                   type="button"
+                  onClick={() => updateSetting('viewportFormat', '16:9')}
+                  className={`p-2 rounded-lg text-[11px] font-semibold flex flex-col items-center justify-center gap-0.5 border transition-all cursor-pointer ${
+                    (settings.viewportFormat ?? '16:9') === '16:9'
+                      ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-500 text-sky-600 dark:text-sky-400 shadow-xs'
+                      : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                  }`}
+                >
+                  <span className="flex items-center gap-1">
+                    <span>1920 × 1080 (16:9)</span>
+                    <span className="text-[9px] px-1 py-0.2 rounded bg-sky-500/20 text-sky-600 dark:text-sky-300 font-bold">Padrão</span>
+                  </span>
+                  <span className="text-[9px] font-normal opacity-75">Horizontal Full HD</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => updateSetting('viewportFormat', 'free')}
                   className={`p-2 rounded-lg text-[11px] font-semibold flex flex-col items-center justify-center gap-0.5 border transition-all cursor-pointer ${
-                    (settings.viewportFormat ?? 'free') === 'free'
+                    settings.viewportFormat === 'free'
                       ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-500 text-sky-600 dark:text-sky-400 shadow-xs'
                       : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300'
                   }`}
                 >
                   <span>Formato livre</span>
                   <span className="text-[9px] font-normal opacity-75">100% Responsivo</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => updateSetting('viewportFormat', '16:9')}
-                  className={`p-2 rounded-lg text-[11px] font-semibold flex flex-col items-center justify-center gap-0.5 border transition-all cursor-pointer ${
-                    settings.viewportFormat === '16:9'
-                      ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-500 text-sky-600 dark:text-sky-400 shadow-xs'
-                      : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300'
-                  }`}
-                >
-                  <span>1920 × 1080 (16:9)</span>
-                  <span className="text-[9px] font-normal opacity-75">Horizontal Full HD</span>
                 </button>
                 <button
                   type="button"
@@ -819,7 +843,7 @@ export const SceneList: React.FC<SceneListProps> = ({
 
       {/* 3. LISTA DE AMBIENTES COM HOTSPOTS ANINHADOS LOGO ABAIXO */}
       {!isScenesListCollapsed && (
-        <div className="flex-1 overflow-y-auto p-3 space-y-3">
+        <div className="p-3 space-y-3">
         {scenes.length === 0 ? (
           <div className="p-4 text-center border-2 border-dashed border-slate-300 dark:border-slate-800 rounded-xl space-y-2.5">
             <span className="text-xs text-slate-500 dark:text-slate-400 block font-medium">
@@ -1253,8 +1277,9 @@ export const SceneList: React.FC<SceneListProps> = ({
           );
         })
       )}
-    </div>
-    )}
+        </div>
+      )}
+      </div>
 
       {/* MODAL / DIÁLOGO DE TROCAR IMAGEM 360° DO CÔMODO */}
       {changingImageScene && (

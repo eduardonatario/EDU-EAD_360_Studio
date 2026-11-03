@@ -26,7 +26,7 @@ export async function generateStandaloneHTML(
     ? `${escapeHtml(project.title)} - Experiência 360° EAD`
     : 'Experiência 360° EAD';
 
-  const viewportFormat = project.settings?.viewportFormat || 'free';
+  const viewportFormat = project.settings?.viewportFormat || '16:9';
   const customWidth = Math.max(320, project.settings?.customWidth || 1920);
   const customHeight = Math.max(240, project.settings?.customHeight || 1080);
   const isDelimitedBox = viewportFormat === '16:9' || viewportFormat === '9:16' || viewportFormat === 'custom';
@@ -603,6 +603,13 @@ export async function generateStandaloneHTML(
 
     <!-- Controles Flutuantes -->
     <aside class="controls-strip" style="${(project.settings?.showNavigationControls ?? true) ? '' : 'display: none !important;'}">
+      ${(project.settings?.showHomeButton ?? true) ? `
+      <button class="ctrl-btn" id="btn-home" title="Voltar ao Primeiro Ambiente (Início)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+      </button>` : ''}
       <button class="ctrl-btn" id="btn-zoom-in" title="Aproximar zoom">+</button>
       <button class="ctrl-btn" id="btn-zoom-out" title="Afastar zoom">−</button>
       <button class="ctrl-btn" id="btn-fullscreen" title="Modo Tela Cheia">⛶</button>
@@ -679,6 +686,7 @@ export async function generateStandaloneHTML(
       const btnFullscreen = document.getElementById('btn-fullscreen');
       const btnZoomIn = document.getElementById('btn-zoom-in');
       const btnZoomOut = document.getElementById('btn-zoom-out');
+      const btnHome = document.getElementById('btn-home');
 
       function openModal(hotspot) {
         if (!hotspot) return;
@@ -875,6 +883,14 @@ export async function generateStandaloneHTML(
       renderRoomNav();
 
       // Controles
+      if (btnHome) {
+        btnHome.addEventListener('click', function() {
+          var homeId = tourData.initialSceneId || (tourData.scenes[0] && tourData.scenes[0].id);
+          if (homeId && currentViewer) {
+            currentViewer.loadScene(homeId);
+          }
+        });
+      }
       btnZoomIn.addEventListener('click', function() {
         currentViewer.setHfov(currentViewer.getHfov() - 12);
       });

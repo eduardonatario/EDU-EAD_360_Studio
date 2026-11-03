@@ -68,6 +68,7 @@ export interface GlobalHotspotSettings {
   defaultArrowDirection: ArrowDirection; // Seta de navegação padrão
   arrowColor: string;         // Cor do glifo da seta (ex: #ffffff)
   showNavigationControls: boolean; // Exibir controles de zoom, centralizar e tela cheia (padrão: true)
+  showHomeButton?: boolean;   // Exibir botão de Início (Home) nos controles para voltar ao primeiro ambiente (padrão: true)
   showBottomRoomBar: boolean; // Exibir menu de navegação com nome dos espaços na parte inferior central (padrão: false)
   showRoomBarHotspotCount: boolean; // Exibir número de hotspots nos botões do menu inferior de cômodos (padrão: false)
   viewportFormat?: ViewportFormat; // Formato do espaço de navegação: 'free' | '16:9' | '9:16' | 'custom'
@@ -85,9 +86,10 @@ export const DEFAULT_HOTSPOT_SETTINGS: GlobalHotspotSettings = {
   defaultArrowDirection: 'right',
   arrowColor: '#ffffff',
   showNavigationControls: true,
+  showHomeButton: true,
   showBottomRoomBar: false,
   showRoomBarHotspotCount: false,
-  viewportFormat: 'free',
+  viewportFormat: '16:9',
   customWidth: 1920,
   customHeight: 1080,
   initialWideFov: false,

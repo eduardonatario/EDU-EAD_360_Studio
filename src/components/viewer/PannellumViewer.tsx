@@ -6,13 +6,14 @@
 import 'pannellum/build/pannellum.css';
 import 'pannellum/build/pannellum.js';
 
-import { Crosshair, MapPin, Maximize, Minimize, Move, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
+import { Crosshair, Home, MapPin, Maximize, Minimize, Move, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { Coords360, GlobalHotspotSettings, Hotspot, RepositionSession, Scene, ViewMode } from '../../types/tour';
 
 interface PannellumViewerProps {
   scenes: Scene[];
   activeSceneId: string;
+  initialSceneId?: string;
   viewMode: ViewMode;
   settings?: GlobalHotspotSettings;
   isAddingNewHotspot: boolean;
@@ -46,6 +47,7 @@ function toValidCoords(rawPitch: number, rawYaw: number): Coords360 {
 export const PannellumViewer: React.FC<PannellumViewerProps> = ({
   scenes,
   activeSceneId,
+  initialSceneId,
   viewMode,
   settings,
   isAddingNewHotspot,
@@ -553,6 +555,17 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
     }
   };
 
+  const handleGoHome = () => {
+    const targetId = initialSceneId || scenes[0]?.id;
+    if (targetId) {
+      if (activeSceneId !== targetId) {
+        onNavigateScene(targetId);
+      } else if (viewerRef.current) {
+        handleResetCamera();
+      }
+    }
+  };
+
   const handleToggleFullscreen = () => {
     if (!document.fullscreenElement) {
       containerRef.current?.requestFullscreen().catch(() => {});
@@ -675,9 +688,20 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
         </div>
       )}
 
-      {/* 5. CONTROLES FLUTUANTES DE CÂMERA (ZOOM, CENTRALIZAR, TELA CHEIA) */}
+      {/* 5. CONTROLES FLUTUANTES DE CÂMERA (HOME, ZOOM, CENTRALIZAR, TELA CHEIA) */}
       {(settings?.showNavigationControls ?? true) && (
         <div className="absolute bottom-6 right-6 z-30 flex flex-col gap-2.5 pointer-events-auto animate-in fade-in">
+          {(settings?.showHomeButton ?? true) && (
+            <button
+              type="button"
+              onClick={handleGoHome}
+              title="Voltar ao Primeiro Ambiente (Início)"
+              className="w-10 h-10 rounded-xl bg-slate-900/85 hover:bg-slate-800 text-white backdrop-blur-md border border-white/10 flex items-center justify-center shadow-lg transition-transform active:scale-95 cursor-pointer group"
+            >
+              <Home className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+            </button>
+          )}
+
           <button
             type="button"
             onClick={handleZoomIn}

@@ -97,7 +97,12 @@ export default function App() {
             const loadedWithSettings: TourProject = {
               ...loaded,
               scenes: refreshedScenes,
-              settings: loaded.settings || { ...DEFAULT_HOTSPOT_SETTINGS },
+              settings: {
+                ...DEFAULT_HOTSPOT_SETTINGS,
+                ...(loaded.settings || {}),
+                viewportFormat: loaded.settings?.viewportFormat ?? DEFAULT_HOTSPOT_SETTINGS.viewportFormat,
+                showHomeButton: loaded.settings?.showHomeButton ?? DEFAULT_HOTSPOT_SETTINGS.showHomeButton,
+              },
             };
             setProject(loadedWithSettings);
             setActiveSceneId(loaded.initialSceneId || (refreshedScenes[0] && refreshedScenes[0].id) || '');
@@ -619,7 +624,7 @@ export default function App() {
         <main className="flex-1 h-full relative overflow-hidden bg-slate-950 flex items-center justify-center p-0">
           <div
             className={`relative overflow-hidden transition-all duration-300 flex items-center justify-center ${
-              project.settings?.viewportFormat === '16:9'
+              (project.settings?.viewportFormat ?? '16:9') === '16:9'
                 ? 'aspect-[16/9] w-full max-w-[1920px] max-h-[1080px] h-auto shadow-2xl rounded-xl border border-slate-800'
                 : project.settings?.viewportFormat === '9:16'
                 ? 'aspect-[9/16] h-full max-h-[1920px] max-w-[1080px] w-auto shadow-2xl rounded-xl border border-slate-800'
@@ -639,6 +644,7 @@ export default function App() {
             <PannellumViewer
               scenes={project.scenes}
               activeSceneId={activeScene?.id || ''}
+              initialSceneId={project.initialSceneId || project.scenes[0]?.id}
               viewMode={viewMode}
               settings={project.settings || DEFAULT_HOTSPOT_SETTINGS}
               isAddingNewHotspot={isAddingNewHotspot}
