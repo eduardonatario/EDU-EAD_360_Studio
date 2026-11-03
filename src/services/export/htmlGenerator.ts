@@ -26,6 +26,11 @@ export async function generateStandaloneHTML(
     ? `${escapeHtml(project.title)} - Experiência 360° EAD`
     : 'Experiência 360° EAD';
 
+  const viewportFormat = project.settings?.viewportFormat || 'free';
+  const customWidth = Math.max(320, project.settings?.customWidth || 1920);
+  const customHeight = Math.max(240, project.settings?.customHeight || 1080);
+  const isDelimitedBox = viewportFormat === '16:9' || viewportFormat === '9:16' || viewportFormat === 'custom';
+
   // 3. Montar o documento completo
   const htmlContent = `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -50,6 +55,60 @@ export async function generateStandaloneHTML(
       background: #090d16;
       color: #f8fafc;
       user-select: none;
+      ${isDelimitedBox ? `
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      box-sizing: border-box;
+      background: #06090e;
+      ` : ''}
+    }
+
+    /* Delimited Tour Viewport Box */
+    .tour-viewport-box {
+      position: relative;
+      overflow: hidden;
+      background: #000000;
+      ${isDelimitedBox ? `
+      border-radius: 14px;
+      border: 1.5px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 25px 70px -10px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.6);
+      transition: all 0.3s ease;
+      ${viewportFormat === '16:9' ? `
+      aspect-ratio: 16 / 9;
+      width: 100%;
+      height: auto;
+      max-width: min(calc(100vw - 32px), calc((100vh - 32px) * (16 / 9)), 1920px);
+      max-height: min(calc(100vh - 32px), calc((100vw - 32px) * (9 / 16)), 1080px);
+      ` : viewportFormat === '9:16' ? `
+      aspect-ratio: 9 / 16;
+      height: 100%;
+      width: auto;
+      max-height: min(calc(100vh - 32px), 1920px);
+      max-width: min(calc(100vw - 32px), calc((100vh - 32px) * (9 / 16)), 1080px);
+      ` : `
+      aspect-ratio: ${customWidth} / ${customHeight};
+      width: 100%;
+      height: auto;
+      max-width: min(calc(100vw - 32px), ${customWidth}px, calc((100vh - 32px) * (${customWidth} / ${customHeight})));
+      max-height: min(calc(100vh - 32px), ${customHeight}px, calc((100vw - 32px) * (${customHeight} / ${customWidth})));
+      `}
+      ` : `
+      width: 100%;
+      height: 100%;
+      `}
+    }
+
+    .tour-viewport-box:fullscreen,
+    .tour-viewport-box:-webkit-full-screen {
+      max-width: 100vw !important;
+      max-height: 100vh !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      border-radius: 0 !important;
+      border: none !important;
+      box-shadow: none !important;
     }
 
     :root {
@@ -229,8 +288,8 @@ export async function generateStandaloneHTML(
 
     /* Container */
     #panorama {
-      width: 100vw;
-      height: 100vh;
+      width: 100%;
+      height: 100%;
       position: absolute;
       top: 0;
       left: 0;
@@ -257,7 +316,7 @@ export async function generateStandaloneHTML(
       padding: 10px 18px;
       border-radius: 12px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-      max-width: 480px;
+      max-width: min(480px, calc(100% - 32px));
     }
     .tour-title {
       font-size: 16px;
@@ -323,7 +382,7 @@ export async function generateStandaloneHTML(
       display: flex;
       gap: 8px;
       box-shadow: 0 10px 36px rgba(0, 0, 0, 0.4);
-      max-width: 90vw;
+      max-width: calc(100% - 32px);
       overflow-x: auto;
     }
     .room-pill {
@@ -353,7 +412,7 @@ export async function generateStandaloneHTML(
 
     /* Educational Info Modal */
     .edu-modal-backdrop {
-      position: fixed;
+      position: absolute;
       top: 0;
       left: 0;
       width: 100%;
@@ -369,6 +428,7 @@ export async function generateStandaloneHTML(
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.25s ease;
+      border-radius: inherit;
     }
     .edu-modal-backdrop.open {
       opacity: 1;
@@ -401,8 +461,8 @@ export async function generateStandaloneHTML(
     .edu-modal-card {
       border-radius: 18px;
       width: 100%;
-      max-width: 620px;
-      max-height: 88vh;
+      max-width: min(620px, calc(100% - 24px));
+      max-height: calc(100% - 24px);
       overflow-y: auto;
       transform: scale(0.94);
       transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease, border-color 0.2s ease;
@@ -518,50 +578,53 @@ export async function generateStandaloneHTML(
   </style>
 </head>
 <body>
-  <!-- Container 360 -->
-  <div id="panorama"></div>
+  <!-- Delimited Viewport Box -->
+  <div class="tour-viewport-box" id="viewport-box">
+    <!-- Container 360 -->
+    <div id="panorama"></div>
 
-  <!-- Header -->
-  ${(() => {
-    const isDefaultOrEmpty = !project.title ||
-      /^(tour\s*virtual\s*360[º°]?|crie\s*imers[aã]o.*)$/i.test(project.title.trim());
-    if (isDefaultOrEmpty && !project.author) return '';
-    return `
-  <header class="tour-header">
-    <div class="tour-branding">
-      ${!isDefaultOrEmpty ? `<h1 class="tour-title">${escapeHtml(project.title)}</h1>` : ''}
-      ${project.author ? `
-      <div class="tour-meta">
-        <span>${escapeHtml(project.author)}</span>
-        ${project.institution ? `<span>·</span><span>${escapeHtml(project.institution)}</span>` : ''}
-      </div>` : ''}
-    </div>
-  </header>`;
-  })()}
-
-  <!-- Controles Flutuantes -->
-  <aside class="controls-strip" style="${(project.settings?.showNavigationControls ?? true) ? '' : 'display: none !important;'}">
-    <button class="ctrl-btn" id="btn-zoom-in" title="Aproximar zoom">+</button>
-    <button class="ctrl-btn" id="btn-zoom-out" title="Afastar zoom">−</button>
-    <button class="ctrl-btn" id="btn-fullscreen" title="Modo Tela Cheia">⛶</button>
-  </aside>
-
-  <!-- Navegador de Cômodos -->
-  <nav class="room-navigator" id="room-nav" aria-label="Navegador de Ambientes" style="${(project.settings?.showBottomRoomBar ?? false) ? '' : 'display: none !important;'}"></nav>
-
-  <!-- Modal Educativo de Informação -->
-  <div class="edu-modal-backdrop" id="edu-modal">
-    <div class="edu-modal-card" role="dialog" aria-modal="true" style="position: relative;">
-      <button class="edu-close-btn" id="modal-close-overlay" aria-label="Fechar" style="display: none; position: absolute; top: 12px; right: 12px; z-index: 10; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 9999px;">✕</button>
-      <div class="edu-modal-header">
-        <div>
-          <h2 class="edu-modal-title" id="modal-title">Título do Ponto de Estudo</h2>
-        </div>
-        <button class="edu-close-btn" id="modal-close-btn" aria-label="Fechar">✕</button>
+    <!-- Header -->
+    ${(() => {
+      const isDefaultOrEmpty = !project.title ||
+        /^(tour\s*virtual\s*360[º°]?|crie\s*imers[aã]o.*)$/i.test(project.title.trim());
+      if (isDefaultOrEmpty && !project.author) return '';
+      return `
+    <header class="tour-header">
+      <div class="tour-branding">
+        ${!isDefaultOrEmpty ? `<h1 class="tour-title">${escapeHtml(project.title)}</h1>` : ''}
+        ${project.author ? `
+        <div class="tour-meta">
+          <span>${escapeHtml(project.author)}</span>
+          ${project.institution ? `<span>·</span><span>${escapeHtml(project.institution)}</span>` : ''}
+        </div>` : ''}
       </div>
-      <div class="edu-modal-body">
-        <img id="modal-image" class="edu-modal-img" src="" alt="Ilustração Educacional" style="display: none;">
-        <p class="edu-modal-text" id="modal-text"></p>
+    </header>`;
+    })()}
+
+    <!-- Controles Flutuantes -->
+    <aside class="controls-strip" style="${(project.settings?.showNavigationControls ?? true) ? '' : 'display: none !important;'}">
+      <button class="ctrl-btn" id="btn-zoom-in" title="Aproximar zoom">+</button>
+      <button class="ctrl-btn" id="btn-zoom-out" title="Afastar zoom">−</button>
+      <button class="ctrl-btn" id="btn-fullscreen" title="Modo Tela Cheia">⛶</button>
+    </aside>
+
+    <!-- Navegador de Cômodos -->
+    <nav class="room-navigator" id="room-nav" aria-label="Navegador de Ambientes" style="${(project.settings?.showBottomRoomBar ?? false) ? '' : 'display: none !important;'}"></nav>
+
+    <!-- Modal Educativo de Informação -->
+    <div class="edu-modal-backdrop" id="edu-modal">
+      <div class="edu-modal-card" role="dialog" aria-modal="true" style="position: relative;">
+        <button class="edu-close-btn" id="modal-close-overlay" aria-label="Fechar" style="display: none; position: absolute; top: 12px; right: 12px; z-index: 10; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 9999px;">✕</button>
+        <div class="edu-modal-header">
+          <div>
+            <h2 class="edu-modal-title" id="modal-title">Título do Ponto de Estudo</h2>
+          </div>
+          <button class="edu-close-btn" id="modal-close-btn" aria-label="Fechar">✕</button>
+        </div>
+        <div class="edu-modal-body">
+          <img id="modal-image" class="edu-modal-img" src="" alt="Ilustração Educacional" style="display: none;">
+          <p class="edu-modal-text" id="modal-text"></p>
+        </div>
       </div>
     </div>
   </div>
@@ -819,11 +882,33 @@ export async function generateStandaloneHTML(
         currentViewer.setHfov(currentViewer.getHfov() + 12);
       });
       btnFullscreen.addEventListener('click', function() {
-        if (!document.fullscreenElement) {
-          document.documentElement.requestFullscreen().catch(function() {});
+        var box = document.getElementById('viewport-box') || document.documentElement;
+        var isFs = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+        if (!isFs) {
+          var req = box.requestFullscreen || box.webkitRequestFullscreen || box.mozRequestFullScreen || box.msRequestFullscreen;
+          if (req) {
+            req.call(box).catch(function() {});
+          }
         } else {
-          document.exitFullscreen().catch(function() {});
+          var exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+          if (exit) {
+            exit.call(document).catch(function() {});
+          }
         }
+      });
+
+      function handleResize() {
+        if (currentViewer && currentViewer.resize) {
+          currentViewer.resize();
+        }
+      }
+
+      window.addEventListener('resize', handleResize);
+      document.addEventListener('fullscreenchange', function() {
+        setTimeout(handleResize, 150);
+      });
+      document.addEventListener('webkitfullscreenchange', function() {
+        setTimeout(handleResize, 150);
       });
     })();
   </script>
