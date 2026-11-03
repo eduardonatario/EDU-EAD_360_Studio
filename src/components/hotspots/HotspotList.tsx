@@ -160,10 +160,6 @@ export const HotspotList: React.FC<HotspotListProps> = ({
                       <span className="font-medium text-slate-600 dark:text-slate-400">
                         {isInfo ? 'Hotspot informativo' : `Destino: ${getDestinationName(hs.targetSceneId)}`}
                       </span>
-                      <span aria-hidden="true" className="text-slate-400 dark:text-slate-600">·</span>
-                      <span className="font-mono tabular-nums text-slate-500">
-                        P: {hs.pitch}° / Y: {hs.yaw}°
-                      </span>
                     </div>
                   </div>
                 </div>

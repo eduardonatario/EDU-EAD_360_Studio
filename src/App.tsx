@@ -74,19 +74,33 @@ export default function App() {
         const savedProjects = await getAllProjectsFromDB();
         if (savedProjects.length > 0) {
           const loaded = savedProjects[0];
+          const demo = createModernHouseDemoProject();
           // Se for o projeto da versão 1 procedural, atualizar imediatamente para a v2 com fotos 360 reais
           if (loaded.id === 'projeto-casa-moderna-ead-360') {
-            const demo = createModernHouseDemoProject();
             await saveProjectToDB(demo);
             setProject(demo);
             setActiveSceneId(demo.initialSceneId);
           } else {
+            // Sincronizar imagens dos cômodos modelo se seus caminhos locais forem atualizados ou estiverem desatualizados
+            const demoImgMap: Record<string, string> = {};
+            demo.scenes.forEach((ds) => {
+              demoImgMap[ds.id] = ds.imageUrl;
+            });
+
+            const refreshedScenes = (loaded.scenes || []).map((sc) => {
+              if (demoImgMap[sc.id] && (!sc.imageUrl || !sc.imageUrl.startsWith('data:'))) {
+                return { ...sc, imageUrl: demoImgMap[sc.id] };
+              }
+              return sc;
+            });
+
             const loadedWithSettings: TourProject = {
               ...loaded,
+              scenes: refreshedScenes,
               settings: loaded.settings || { ...DEFAULT_HOTSPOT_SETTINGS },
             };
             setProject(loadedWithSettings);
-            setActiveSceneId(loaded.initialSceneId || (loaded.scenes[0] && loaded.scenes[0].id) || '');
+            setActiveSceneId(loaded.initialSceneId || (refreshedScenes[0] && refreshedScenes[0].id) || '');
           }
         } else {
           // Inicializar projeto demonstrativo da Casa Moderna com as fotos 360 reais
@@ -353,6 +367,8 @@ export default function App() {
       title: 'Novo Ponto Informativo',
       description: 'Insira aqui as diretrizes educacionais ou detalhes do cômodo.',
       category: 'Arquitetura',
+      cardTheme: 'light',
+      backdropBlur: 'medium',
     };
 
     const updatedScenes = project.scenes.map((s) => {
@@ -489,7 +505,7 @@ export default function App() {
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-z0-9]/g, '_');
-      const filename = `ead360_${safeName || 'experiencia'}.html`;
+      const filename = `tour360_${safeName || 'experiencia'}.html`;
 
       setDownloadUrl(url);
       setExportFileName(filename);

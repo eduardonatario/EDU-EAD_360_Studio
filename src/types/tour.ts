@@ -91,6 +91,9 @@ export const DEFAULT_HOTSPOT_SETTINGS: GlobalHotspotSettings = {
   initialWideFov: false,
 };
 
+export type HotspotCardTheme = 'light' | 'dark';
+export type HotspotBackdropBlur = 'none' | 'low' | 'medium' | 'high';
+
 export interface Hotspot {
   id: string;
   type: HotspotType;
@@ -103,6 +106,8 @@ export interface Hotspot {
   description?: string;
   imageUrl?: string;      // Data URL da imagem explicativa
   imageOnly?: boolean;    // Exibir apenas imagem preenchendo o quadro de informação
+  cardTheme?: HotspotCardTheme;      // Fundo do quadro: 'light' (claro, padrão) ou 'dark' (escuro)
+  backdropBlur?: HotspotBackdropBlur; // Desfoque de fundo: 'none' | 'low' | 'medium' | 'high'
   category?: string;
   iconName?: 'info' | 'book' | 'eye' | 'help' | 'lightbulb';
   

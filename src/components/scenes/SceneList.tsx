@@ -919,9 +919,6 @@ export const SceneList: React.FC<SceneListProps> = ({
                                 <span className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate block">
                                   {hs.title || 'Ponto Informativo'}
                                 </span>
-                                <span className="font-mono text-[10px] text-slate-400 tabular-nums">
-                                  P: {hs.pitch}° / Y: {hs.yaw}°
-                                </span>
                               </div>
                             </div>
 

@@ -201,7 +201,9 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
       if (
         event.message &&
         (event.message.includes("Cannot set properties of undefined (setting 'src')") ||
-          event.message.includes('FileReader'))
+          event.message.includes('FileReader') ||
+          event.message.includes('readAsBinaryString') ||
+          event.message.includes('Blob'))
       ) {
         event.preventDefault();
         event.stopImmediatePropagation();
@@ -209,9 +211,24 @@ export const PannellumViewer: React.FC<PannellumViewerProps> = ({
       }
     };
 
+    const handleRejection = (event: PromiseRejectionEvent) => {
+      if (
+        event.reason &&
+        typeof event.reason.message === 'string' &&
+        (event.reason.message.includes('FileReader') ||
+          event.reason.message.includes('readAsBinaryString') ||
+          event.reason.message.includes('Blob'))
+      ) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    };
+
     window.addEventListener('error', handleGlobalError, true);
+    window.addEventListener('unhandledrejection', handleRejection, true);
     return () => {
       window.removeEventListener('error', handleGlobalError, true);
+      window.removeEventListener('unhandledrejection', handleRejection, true);
     };
   }, []);
 

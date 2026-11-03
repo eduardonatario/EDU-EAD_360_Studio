@@ -184,12 +184,8 @@ export async function generateStandaloneHTML(
       border-color: #ecfdf5 !important;
       box-shadow: 0 0 0 7px rgba(255, 255, 255, 0.4), 0 8px 26px rgba(0, 0, 0, 0.55) !important;
     }
-      background: #059669 !important;
-      border-color: #ecfdf5 !important;
-      box-shadow: 0 0 0 7px rgba(16, 185, 129, 0.5), 0 8px 26px rgba(16, 185, 129, 0.95) !important;
-    }
     .custom-hotspot-scene:hover::after {
-      transform: scale(1.22);
+      transform: scale(1.22) !important;
     }
 
     @keyframes pulse-ring-export {
@@ -362,8 +358,9 @@ export async function generateStandaloneHTML(
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.65);
-      backdrop-filter: blur(8px);
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       z-index: 100;
       display: flex;
       align-items: center;
@@ -377,46 +374,121 @@ export async function generateStandaloneHTML(
       opacity: 1;
       pointer-events: auto;
     }
+
+    /* Variações de Desfoque de Fundo */
+    .edu-modal-backdrop.blur-none {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      background: rgba(15, 23, 42, 0.45) !important;
+    }
+    .edu-modal-backdrop.blur-low {
+      backdrop-filter: blur(4px) !important;
+      -webkit-backdrop-filter: blur(4px) !important;
+      background: rgba(15, 23, 42, 0.55) !important;
+    }
+    .edu-modal-backdrop.blur-medium {
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
+      background: rgba(15, 23, 42, 0.72) !important;
+    }
+    .edu-modal-backdrop.blur-high {
+      backdrop-filter: blur(24px) !important;
+      -webkit-backdrop-filter: blur(24px) !important;
+      background: rgba(15, 23, 42, 0.85) !important;
+    }
+
+    /* Quadro do Modal */
     .edu-modal-card {
-      background: #0f172a;
-      border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 18px;
       width: 100%;
       max-width: 620px;
       max-height: 88vh;
       overflow-y: auto;
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
       transform: scale(0.94);
-      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease, border-color 0.2s ease;
     }
     .edu-modal-backdrop.open .edu-modal-card {
       transform: scale(1);
     }
+
+    /* Tema Claro (Padrão) */
+    .edu-modal-card.theme-light,
+    .edu-modal-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      color: #1e293b;
+      box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.35);
+    }
+    .edu-modal-card.theme-light .edu-modal-header,
+    .edu-modal-card .edu-modal-header {
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .edu-modal-card.theme-light .edu-modal-title,
+    .edu-modal-card .edu-modal-title {
+      color: #0f172a;
+    }
+    .edu-modal-card.theme-light .edu-close-btn,
+    .edu-modal-card .edu-close-btn {
+      color: #64748b;
+      background: rgba(0, 0, 0, 0.05);
+    }
+    .edu-modal-card.theme-light .edu-close-btn:hover,
+    .edu-modal-card .edu-close-btn:hover {
+      background: rgba(0, 0, 0, 0.1);
+      color: #0f172a;
+    }
+    .edu-modal-card.theme-light .edu-modal-text,
+    .edu-modal-card .edu-modal-text {
+      color: #334155;
+    }
+    .edu-modal-card.theme-light .edu-modal-img,
+    .edu-modal-card .edu-modal-img {
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+    }
+
+    /* Tema Escuro */
+    .edu-modal-card.theme-dark {
+      background: #0f172a !important;
+      border: 1px solid #334155 !important;
+      color: #f8fafc !important;
+      box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.75) !important;
+    }
+    .edu-modal-card.theme-dark .edu-modal-header {
+      border-bottom: 1px solid #1e293b !important;
+    }
+    .edu-modal-card.theme-dark .edu-modal-title {
+      color: #ffffff !important;
+    }
+    .edu-modal-card.theme-dark .edu-close-btn {
+      color: #94a3b8 !important;
+      background: rgba(255, 255, 255, 0.08) !important;
+    }
+    .edu-modal-card.theme-dark .edu-close-btn:hover {
+      background: rgba(255, 255, 255, 0.16) !important;
+      color: #ffffff !important;
+    }
+    .edu-modal-card.theme-dark .edu-modal-text {
+      color: #cbd5e1 !important;
+    }
+    .edu-modal-card.theme-dark .edu-modal-img {
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      background: #020617 !important;
+    }
+
     .edu-modal-header {
       padding: 20px 24px 14px 24px;
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    .edu-modal-category {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: #38bdf8;
-      margin-bottom: 4px;
     }
     .edu-modal-title {
       font-size: 20px;
       font-weight: 700;
-      color: #ffffff;
       line-height: 1.3;
     }
     .edu-close-btn {
-      background: rgba(255, 255, 255, 0.08);
       border: none;
-      color: #94a3b8;
       width: 34px;
       height: 34px;
       border-radius: 8px;
@@ -429,10 +501,6 @@ export async function generateStandaloneHTML(
       margin-left: 12px;
       flex-shrink: 0;
     }
-    .edu-close-btn:hover {
-      background: rgba(255, 255, 255, 0.16);
-      color: #ffffff;
-    }
     .edu-modal-body {
       padding: 20px 24px 24px 24px;
     }
@@ -440,33 +508,12 @@ export async function generateStandaloneHTML(
       width: 100%;
       border-radius: 12px;
       margin-bottom: 18px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
     }
     .edu-modal-text {
       font-size: 15px;
       line-height: 1.65;
-      color: #cbd5e1;
       white-space: pre-wrap;
-    }
-    .edu-modal-footer {
-      padding: 12px 24px 20px 24px;
-      display: flex;
-      justify-content: flex-end;
-    }
-    .edu-action-btn {
-      background: #0284c7;
-      border: none;
-      color: #ffffff;
-      padding: 10px 20px;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s ease;
-    }
-    .edu-action-btn:hover {
-      background: #0369a1;
     }
   </style>
 </head>
@@ -516,14 +563,36 @@ export async function generateStandaloneHTML(
         <img id="modal-image" class="edu-modal-img" src="" alt="Ilustração Educacional" style="display: none;">
         <p class="edu-modal-text" id="modal-text"></p>
       </div>
-      <div class="edu-modal-footer">
-        <button class="edu-action-btn" id="modal-ok-btn">Entendido</button>
-      </div>
     </div>
   </div>
 
   <!-- Pannellum Bundle Embutido Localmente -->
   <script>
+    (function() {
+      if (window.FileReader && FileReader.prototype) {
+        var origReadAsBinaryString = FileReader.prototype.readAsBinaryString;
+        if (origReadAsBinaryString) {
+          FileReader.prototype.readAsBinaryString = function(blob) {
+            if (!(blob instanceof Blob)) return origReadAsBinaryString.call(this, new Blob([]));
+            return origReadAsBinaryString.call(this, blob);
+          };
+        }
+        var origReadAsText = FileReader.prototype.readAsText;
+        if (origReadAsText) {
+          FileReader.prototype.readAsText = function(blob, encoding) {
+            if (!(blob instanceof Blob)) return origReadAsText.call(this, new Blob([]), encoding);
+            return origReadAsText.call(this, blob, encoding);
+          };
+        }
+      }
+      if (window.URL && window.URL.createObjectURL) {
+        var origCreateObjectURL = window.URL.createObjectURL;
+        window.URL.createObjectURL = function(obj) {
+          if (!(obj instanceof Blob) && !(obj instanceof MediaSource)) return '';
+          try { return origCreateObjectURL.call(this, obj); } catch(e) { return ''; }
+        };
+      }
+    })();
     ${pannellumJsRaw}
   </script>
 
@@ -537,61 +606,76 @@ export async function generateStandaloneHTML(
       // Elementos do DOM
       const modal = document.getElementById('edu-modal');
       const modalHeader = document.querySelector('.edu-modal-header');
-      const modalFooter = document.querySelector('.edu-modal-footer');
       const modalBody = document.querySelector('.edu-modal-body');
       const modalTitle = document.getElementById('modal-title');
       const modalImage = document.getElementById('modal-image');
       const modalText = document.getElementById('modal-text');
       const modalCloseBtn = document.getElementById('modal-close-btn');
       const modalCloseOverlay = document.getElementById('modal-close-overlay');
-      const modalOkBtn = document.getElementById('modal-ok-btn');
       const roomNav = document.getElementById('room-nav');
       const btnFullscreen = document.getElementById('btn-fullscreen');
       const btnZoomIn = document.getElementById('btn-zoom-in');
       const btnZoomOut = document.getElementById('btn-zoom-out');
 
       function openModal(hotspot) {
-        if (hotspot.imageOnly && hotspot.imageUrl) {
-          modalCloseOverlay.style.display = 'flex';
-          modalHeader.style.display = 'none';
-          modalFooter.style.display = 'none';
-          modalText.style.display = 'none';
-          modalBody.style.padding = '0';
-          modalImage.style.marginBottom = '0';
-          modalImage.style.borderRadius = '16px';
-          modalImage.style.maxHeight = '88vh';
-          modalImage.src = hotspot.imageUrl;
-          modalImage.style.display = 'block';
-        } else {
-          modalCloseOverlay.style.display = 'none';
-          modalHeader.style.display = 'flex';
-          modalFooter.style.display = 'flex';
-          modalText.style.display = 'block';
-          modalBody.style.padding = '20px 24px 24px 24px';
-          modalImage.style.marginBottom = '18px';
-          modalTitle.textContent = hotspot.title;
-          modalText.textContent = hotspot.description || '';
-          if (hotspot.imageUrl) {
-            modalImage.src = hotspot.imageUrl;
-            modalImage.style.display = 'block';
-            modalImage.style.maxHeight = '280px';
-          } else {
-            modalImage.style.display = 'none';
+        if (!hotspot) return;
+
+        if (modal) {
+          modal.classList.remove('blur-none', 'blur-low', 'blur-medium', 'blur-high');
+          modal.classList.add('blur-' + (hotspot.backdropBlur || 'medium'));
+
+          var modalCard = modal.querySelector('.edu-modal-card');
+          if (modalCard) {
+            modalCard.classList.remove('theme-light', 'theme-dark');
+            modalCard.classList.add(hotspot.cardTheme === 'dark' ? 'theme-dark' : 'theme-light');
           }
         }
-        modal.classList.add('open');
+
+        if (hotspot.imageOnly && hotspot.imageUrl) {
+          if (modalCloseOverlay) modalCloseOverlay.style.display = 'flex';
+          if (modalHeader) modalHeader.style.display = 'none';
+          if (modalText) modalText.style.display = 'none';
+          if (modalBody) modalBody.style.padding = '0';
+          if (modalImage) {
+            modalImage.style.marginBottom = '0';
+            modalImage.style.borderRadius = '16px';
+            modalImage.style.maxHeight = '88vh';
+            modalImage.src = hotspot.imageUrl;
+            modalImage.style.display = 'block';
+          }
+        } else {
+          if (modalCloseOverlay) modalCloseOverlay.style.display = 'none';
+          if (modalHeader) modalHeader.style.display = 'flex';
+          if (modalText) modalText.style.display = 'block';
+          if (modalBody) modalBody.style.padding = '20px 24px 24px 24px';
+          if (modalTitle) modalTitle.textContent = hotspot.title || 'Informação';
+          if (modalText) modalText.textContent = hotspot.description || '';
+          if (modalImage) {
+            if (hotspot.imageUrl) {
+              modalImage.style.marginBottom = '18px';
+              modalImage.style.borderRadius = '12px';
+              modalImage.style.maxHeight = '280px';
+              modalImage.src = hotspot.imageUrl;
+              modalImage.style.display = 'block';
+            } else {
+              modalImage.style.display = 'none';
+            }
+          }
+        }
+        if (modal) modal.classList.add('open');
       }
 
       function closeModal() {
-        modal.classList.remove('open');
+        if (modal) modal.classList.remove('open');
       }
 
-      modalCloseBtn.addEventListener('click', closeModal);
-      modalCloseOverlay.addEventListener('click', closeModal);
-      modalOkBtn.addEventListener('click', closeModal);
-      modal.addEventListener('click', function(e) {
-        if (e.target === modal) closeModal();
-      });
+      if (modalCloseBtn) modalCloseBtn.addEventListener('click', closeModal);
+      if (modalCloseOverlay) modalCloseOverlay.addEventListener('click', closeModal);
+      if (modal) {
+        modal.addEventListener('click', function(e) {
+          if (e.target === modal) closeModal();
+        });
+      }
       document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') closeModal();
       });
@@ -608,30 +692,56 @@ export async function generateStandaloneHTML(
           maxHfov: (tourData.settings && tourData.settings.initialWideFov) ? 130 : 120,
           hotSpots: (sc.hotspots || []).map(function(hs) {
             var pulseClass = (tourData.settings && tourData.settings.pulseEffect !== false) ? 'hotspot-pulse' : '';
-            if (hs.type === 'scene') {
-              var arrowDir = hs.arrowDirection || (tourData.settings && tourData.settings.defaultArrowDirection) || 'right';
-              return {
-                pitch: hs.pitch,
-                yaw: hs.yaw,
-                type: 'scene',
-                text: hs.title,
-                sceneId: hs.targetSceneId,
-                targetPitch: hs.targetPitch || 0,
-                targetYaw: hs.targetYaw || 0,
-                cssClass: ('custom-hotspot-scene arrow-' + arrowDir + ' ' + pulseClass).trim()
-              };
-            } else {
-              return {
-                pitch: hs.pitch,
-                yaw: hs.yaw,
-                type: 'info',
-                text: hs.title,
-                cssClass: ('custom-hotspot-info ' + pulseClass).trim(),
-                clickHandlerFunc: function() {
+            var isInfo = hs.type === 'info';
+            var baseClass = isInfo ? 'custom-hotspot-info' : 'custom-hotspot-scene';
+            var arrowDir = hs.arrowDirection || (tourData.settings && tourData.settings.defaultArrowDirection) || 'right';
+            var arrowClass = !isInfo ? ('arrow-' + arrowDir) : '';
+
+            return {
+              id: hs.id,
+              pitch: hs.pitch,
+              yaw: hs.yaw,
+              type: hs.type,
+              text: hs.title || '',
+              sceneId: hs.type === 'scene' ? hs.targetSceneId : undefined,
+              targetPitch: hs.targetPitch || 0,
+              targetYaw: hs.targetYaw || 0,
+              cssClass: (baseClass + ' ' + arrowClass + ' ' + pulseClass).trim(),
+              createTooltipFunc: function(hotSpotDiv) {
+                hotSpotDiv.setAttribute('data-hotspot-id', hs.id);
+
+                if (hs.customColor) {
+                  hotSpotDiv.style.backgroundColor = hs.customColor;
+                }
+                if (hs.arrowColor) {
+                  hotSpotDiv.style.setProperty('--arrow-color', hs.arrowColor);
+                }
+
+                if (hs.title) {
+                  var span = document.createElement('span');
+                  span.textContent = hs.title;
+                  hotSpotDiv.classList.add('pnlm-tooltip');
+                  hotSpotDiv.appendChild(span);
+                }
+
+                hotSpotDiv.addEventListener('click', function(e) {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  if (hs.type === 'scene' && hs.targetSceneId) {
+                    currentViewer.loadScene(hs.targetSceneId, hs.targetPitch || undefined, hs.targetYaw || undefined);
+                  } else {
+                    openModal(hs);
+                  }
+                });
+              },
+              clickHandlerFunc: function() {
+                if (hs.type === 'scene' && hs.targetSceneId) {
+                  currentViewer.loadScene(hs.targetSceneId, hs.targetPitch || undefined, hs.targetYaw || undefined);
+                } else {
                   openModal(hs);
                 }
-              };
-            }
+              }
+            };
           })
         };
       });

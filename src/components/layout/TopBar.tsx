@@ -47,12 +47,13 @@ export const TopBar: React.FC<TopBarProps> = ({
         </div>
         <div>
           <span className="text-base font-bold tracking-tight text-slate-900 dark:text-slate-100 whitespace-nowrap block leading-tight">
-            EAD 360 Studio
+            Tour virtual 360º
           </span>
           {Boolean(
             project.title &&
               project.title !== 'Crie imersão em ambiente em 360º' &&
-              project.title !== 'Tour Virtual 360º'
+              project.title !== 'Tour Virtual 360º' &&
+              project.title !== 'Tour virtual 360º'
           ) ? (
             <span className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px] block">
               {project.title}

@@ -14,7 +14,14 @@ import {
   X,
 } from 'lucide-react';
 import React, { useRef, useState } from 'react';
-import { ArrowDirection, Hotspot, HotspotType, Scene } from '../../types/tour';
+import {
+  ArrowDirection,
+  Hotspot,
+  HotspotBackdropBlur,
+  HotspotCardTheme,
+  HotspotType,
+  Scene,
+} from '../../types/tour';
 
 const ARROW_OPTIONS: { id: ArrowDirection; label: string; glyph: string }[] = [
   { id: 'right', label: 'Direita', glyph: '➔' },
@@ -71,6 +78,8 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
   const [customColor, setCustomColor] = useState(hotspot.customColor || '');
   const [arrowColor, setArrowColor] = useState(hotspot.arrowColor || '');
   const [imageOnly, setImageOnly] = useState(hotspot.imageOnly || false);
+  const [cardTheme, setCardTheme] = useState<HotspotCardTheme>(hotspot.cardTheme || 'light');
+  const [backdropBlur, setBackdropBlur] = useState<HotspotBackdropBlur>(hotspot.backdropBlur || 'medium');
 
   // Sincronizar campos sempre que o hotspot for reposicionado, arrastado ou trocado
   React.useEffect(() => {
@@ -85,6 +94,8 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
     setCustomColor(hotspot.customColor || '');
     setArrowColor(hotspot.arrowColor || '');
     setImageOnly(hotspot.imageOnly || false);
+    setCardTheme(hotspot.cardTheme || 'light');
+    setBackdropBlur(hotspot.backdropBlur || 'medium');
   }, [hotspot, currentSceneId, allScenes]);
 
   // Controle de modo de inserção de imagem: 'upload' ou 'url'
@@ -129,6 +140,8 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
       description: type === 'info' ? description : undefined,
       imageUrl: type === 'info' ? imageUrl : undefined,
       imageOnly: type === 'info' ? imageOnly : undefined,
+      cardTheme: type === 'info' ? cardTheme : undefined,
+      backdropBlur: type === 'info' ? backdropBlur : undefined,
       customColor: customColor || undefined,
       targetSceneId: type === 'scene' ? targetSceneId : undefined,
       targetPitch: type === 'scene' ? 0 : undefined,
@@ -505,6 +518,73 @@ export const HotspotEditor: React.FC<HotspotEditorProps> = ({
               <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-0.5">
                 Ao clicar no hotspot, exibe apenas a imagem preenchendo o quadro de informação.
               </span>
+            </div>
+
+            {/* Opção Fundo do Quadro (Claro vs Escuro) */}
+            <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800/80 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                  Fundo do quadro informativo
+                </span>
+                <span className="text-[10px] text-slate-400">
+                  {cardTheme === 'dark' ? 'Tema Escuro' : 'Tema Claro'}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setCardTheme('light')}
+                  className={`px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                    cardTheme === 'light'
+                      ? 'bg-sky-50 dark:bg-sky-950/60 border-sky-500 text-sky-700 dark:text-sky-300 shadow-2xs font-bold'
+                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                  }`}
+                >
+                  <span>☀️ Claro (Padrão)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCardTheme('dark')}
+                  className={`px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                    cardTheme === 'dark'
+                      ? 'bg-sky-50 dark:bg-sky-950/60 border-sky-500 text-sky-700 dark:text-sky-300 shadow-2xs font-bold'
+                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                  }`}
+                >
+                  <span>🌙 Escuro</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Opção Desfoque de Fundo do Ambiente ao Exibir o Quadro */}
+            <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800/80 space-y-1.5">
+              <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block">
+                Desfoque do fundo ao abrir o quadro
+              </span>
+              <div className="grid grid-cols-2 gap-1.5">
+                {[
+                  { id: 'none', label: 'Sem desfoque' },
+                  { id: 'low', label: 'Pouco desfocado' },
+                  { id: 'medium', label: 'Desfoque médio' },
+                  { id: 'high', label: 'Muito desfocado' },
+                ].map((opt) => {
+                  const isSelected = backdropBlur === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setBackdropBlur(opt.id as HotspotBackdropBlur)}
+                      className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-medium flex items-center justify-center text-center cursor-pointer transition-all ${
+                        isSelected
+                          ? 'bg-sky-50 dark:bg-sky-950/60 border-sky-500 text-sky-700 dark:text-sky-300 font-bold shadow-2xs'
+                          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                      }`}
+                    >
+                      <span>{opt.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </>
         )}

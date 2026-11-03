@@ -28,7 +28,40 @@ if (typeof window !== 'undefined') {
     };
   }
 
-  if (window.FileReader) {
+  if (window.FileReader && FileReader.prototype) {
+    const origReadAsBinaryString = FileReader.prototype.readAsBinaryString;
+    if (origReadAsBinaryString) {
+      FileReader.prototype.readAsBinaryString = function (blob: Blob) {
+        if (!(blob instanceof Blob)) {
+          console.warn('[Pannellum Safeguard] Ignorado readAsBinaryString com parâmetro não-Blob:', blob);
+          return origReadAsBinaryString.call(this, new Blob([]));
+        }
+        return origReadAsBinaryString.call(this, blob);
+      };
+    }
+
+    const origReadAsText = FileReader.prototype.readAsText;
+    if (origReadAsText) {
+      FileReader.prototype.readAsText = function (blob: Blob, encoding?: string) {
+        if (!(blob instanceof Blob)) {
+          console.warn('[Pannellum Safeguard] Ignorado readAsText com parâmetro não-Blob:', blob);
+          return origReadAsText.call(this, new Blob([]), encoding);
+        }
+        return origReadAsText.call(this, blob, encoding);
+      };
+    }
+
+    const origReadAsArrayBuffer = FileReader.prototype.readAsArrayBuffer;
+    if (origReadAsArrayBuffer) {
+      FileReader.prototype.readAsArrayBuffer = function (blob: Blob) {
+        if (!(blob instanceof Blob)) {
+          console.warn('[Pannellum Safeguard] Ignorado readAsArrayBuffer com parâmetro não-Blob:', blob);
+          return origReadAsArrayBuffer.call(this, new Blob([]));
+        }
+        return origReadAsArrayBuffer.call(this, blob);
+      };
+    }
+
     const origAddEvt = FileReader.prototype.addEventListener;
     FileReader.prototype.addEventListener = function (
       this: FileReader,
@@ -45,7 +78,8 @@ if (typeof window !== 'undefined') {
               err &&
               err.message &&
               (err.message.includes("setting 'src'") ||
-                err.message.includes('Cannot set properties of undefined'))
+                err.message.includes('Cannot set properties of undefined') ||
+                err.message.includes('readAsBinaryString'))
             ) {
               return;
             }
@@ -55,6 +89,21 @@ if (typeof window !== 'undefined') {
         return origAddEvt.call(this, type, safeListener, options);
       }
       return origAddEvt.call(this, type, listener, options);
+    };
+  }
+
+  if (window.URL && window.URL.createObjectURL) {
+    const origCreateObjectURL = window.URL.createObjectURL;
+    window.URL.createObjectURL = function (obj: Blob | MediaSource) {
+      if (!(obj instanceof Blob) && !(obj instanceof MediaSource)) {
+        console.warn('[Pannellum Safeguard] createObjectURL com objeto não-Blob:', obj);
+        return '';
+      }
+      try {
+        return origCreateObjectURL.call(this, obj);
+      } catch {
+        return '';
+      }
     };
   }
 }

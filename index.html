@@ -32,8 +32,41 @@
             };
           }
 
-          // Safeguard against Pannellum async FileReader cleanup race conditions
-          if (window.FileReader) {
+          // Safeguard against Pannellum async FileReader and createObjectURL non-Blob crashes
+          if (window.FileReader && FileReader.prototype) {
+            var origReadAsBinaryString = FileReader.prototype.readAsBinaryString;
+            if (origReadAsBinaryString) {
+              FileReader.prototype.readAsBinaryString = function(blob) {
+                if (!(blob instanceof Blob)) {
+                  console.warn('[Pannellum Safeguard] Ignorado readAsBinaryString com parâmetro não-Blob:', blob);
+                  return origReadAsBinaryString.call(this, new Blob([]));
+                }
+                return origReadAsBinaryString.call(this, blob);
+              };
+            }
+
+            var origReadAsText = FileReader.prototype.readAsText;
+            if (origReadAsText) {
+              FileReader.prototype.readAsText = function(blob, encoding) {
+                if (!(blob instanceof Blob)) {
+                  console.warn('[Pannellum Safeguard] Ignorado readAsText com parâmetro não-Blob:', blob);
+                  return origReadAsText.call(this, new Blob([]), encoding);
+                }
+                return origReadAsText.call(this, blob, encoding);
+              };
+            }
+
+            var origReadAsArrayBuffer = FileReader.prototype.readAsArrayBuffer;
+            if (origReadAsArrayBuffer) {
+              FileReader.prototype.readAsArrayBuffer = function(blob) {
+                if (!(blob instanceof Blob)) {
+                  console.warn('[Pannellum Safeguard] Ignorado readAsArrayBuffer com parâmetro não-Blob:', blob);
+                  return origReadAsArrayBuffer.call(this, new Blob([]));
+                }
+                return origReadAsArrayBuffer.call(this, blob);
+              };
+            }
+
             var origAddEvt = FileReader.prototype.addEventListener;
             FileReader.prototype.addEventListener = function(type, listener, options) {
               if (typeof listener === 'function') {
@@ -41,8 +74,12 @@
                   try {
                     return listener.apply(this, arguments);
                   } catch (err) {
-                    if (err && err.message && (err.message.indexOf("setting 'src'") !== -1 || err.message.indexOf("Cannot set properties of undefined") !== -1)) {
-                      console.warn('[Pannellum] Ignorando corrida assíncrona de limpeza do FileReader com sucesso.');
+                    if (err && err.message && (
+                      err.message.indexOf("setting 'src'") !== -1 ||
+                      err.message.indexOf("Cannot set properties of undefined") !== -1 ||
+                      err.message.indexOf("readAsBinaryString") !== -1
+                    )) {
+                      console.warn('[Pannellum] Ignorando corrida assíncrona do FileReader com sucesso.');
                       return;
                     }
                     throw err;
@@ -54,23 +91,42 @@
             };
           }
 
+          if (window.URL && window.URL.createObjectURL) {
+            var origCreateObjectURL = window.URL.createObjectURL;
+            window.URL.createObjectURL = function(obj) {
+              if (!(obj instanceof Blob) && !(obj instanceof MediaSource)) {
+                console.warn('[Pannellum Safeguard] createObjectURL com objeto não-Blob:', obj);
+                return '';
+              }
+              try {
+                return origCreateObjectURL.call(this, obj);
+              } catch (e) {
+                return '';
+              }
+            };
+          }
+
           window.addEventListener('error', function(e) {
             if (e && e.message && (
               e.message.indexOf("setting 'src'") !== -1 ||
               e.message.indexOf("Cannot set properties of undefined") !== -1 ||
-              e.message.indexOf("The node to be removed is not a child of this node") !== -1
+              e.message.indexOf("The node to be removed is not a child of this node") !== -1 ||
+              e.message.indexOf("readAsBinaryString") !== -1 ||
+              e.message.indexOf("parameter 1 is not of type 'Blob'") !== -1 ||
+              e.message.indexOf("FileReader") !== -1
             )) {
               e.preventDefault();
               e.stopImmediatePropagation();
+              console.warn('[Global Error Safeguard] Erro assíncrono capturado e neutralizado:', e.message);
             }
           }, true);
         }
       })();
     </script>
-    <title>EAD 360 Studio</title>
-    <meta name="description" content="Crie experiências educacionais interativas em 360º para EAD com hotspots informativos e exportação HTML 100% offline." />
-    <meta property="og:title" content="EAD 360 Studio" />
-    <meta property="og:description" content="Crie experiências educacionais interativas em 360º para EAD com hotspots informativos e exportação HTML 100% offline." />
+    <title>Tour virtual 360º</title>
+    <meta name="description" content="Crie experiências interativas em 360º com hotspots informativos e exportação HTML 100% offline." />
+    <meta property="og:title" content="Tour virtual 360º" />
+    <meta property="og:description" content="Crie experiências interativas em 360º com hotspots informativos e exportação HTML 100% offline." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
