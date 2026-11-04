@@ -33,7 +33,7 @@ export async function generateStandaloneHTML(
 
   // 3. Montar o documento completo
   const htmlContent = `<!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="vtour-root">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -41,20 +41,21 @@ export async function generateStandaloneHTML(
   <meta name="description" content="${escapeHtml(project.description || 'Ambiente panorâmico imersivo 360°')}">
   
   <style>
-    /* Reset & Base */
-    *, *::before, *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    html {
+    /* ==========================================================================
+       ISOLAMENTO PARA EMBED / HOSPEDAGEM EXTERNA:
+       Estas regras de html e body aplicam-se EXCLUSIVAMENTE quando o documento
+       for o documento raiz do tour (.vtour-root e .vtour-body).
+       Caso este código seja incorporado diretamente em outra página hospedeira,
+       o html e body da página externa JAMAIS serão alterados ou afetados.
+       ========================================================================== */
+    html.vtour-root {
       width: 100%;
       height: 100%;
       overflow-y: auto;
       overflow-x: hidden;
       scroll-behavior: smooth;
     }
-    body {
+    body.vtour-body {
       width: 100%;
       min-height: 100vh;
       margin: 0;
@@ -64,7 +65,6 @@ export async function generateStandaloneHTML(
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       background: #090d16;
       color: #f8fafc;
-      user-select: none;
       ${isDelimitedBox ? `
       display: flex;
       align-items: center;
@@ -75,13 +75,65 @@ export async function generateStandaloneHTML(
       ` : ''}
     }
 
-    /* Delimited Tour Viewport Box */
-    .tour-viewport-box {
+    /* Caso esteja incorporado por <iframe>: remove margens externas e preenche 100% */
+    html.vtour-root.vtour-in-iframe,
+    body.vtour-body.vtour-in-iframe {
+      padding: 0 !important;
+      margin: 0 !important;
+      min-height: 100% !important;
+      height: 100% !important;
+      overflow: hidden !important;
+      background: #000000 !important;
+    }
+    body.vtour-body.vtour-in-iframe #viewport-box {
+      max-width: 100% !important;
+      max-height: 100% !important;
+      border-radius: 0 !important;
+      border: none !important;
+      box-shadow: none !important;
+      margin: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    /* ==========================================================================
+       RESET ESTRITAMENTE ESCOPADO AO BOX DO TOUR:
+       NUNCA usar *, *::before, *::after globais para não interferir na página hospedeira.
+       ========================================================================== */
+    #viewport-box,
+    #viewport-box *,
+    #viewport-box *::before,
+    #viewport-box *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* ==========================================================================
+       CONTAINER PRINCIPAL (VIEWPORT BOX)
+       Autocontido com isolamento de contexto (isolation: isolate) e variáveis CSS locais
+       ========================================================================== */
+    .tour-viewport-box,
+    #viewport-box {
       position: relative;
       overflow: hidden;
       background: #000000;
       margin: auto;
       outline: none;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #f8fafc;
+      user-select: none;
+      -webkit-user-select: none;
+      line-height: 1.5;
+      text-align: left;
+      isolation: isolate;
+      contain: layout style;
+
+      /* Variáveis CSS restritas ao box */
+      --info-hotspot-color: ${project.settings?.infoColor || '#0ea5e9'};
+      --scene-hotspot-color: ${project.settings?.sceneColor || '#10b981'};
+      --arrow-color: ${project.settings?.arrowColor || '#ffffff'};
+
       ${isDelimitedBox ? `
       border-radius: 14px;
       border: 1.5px solid rgba(255, 255, 255, 0.15);
@@ -112,14 +164,14 @@ export async function generateStandaloneHTML(
       `}
     }
 
-    .tour-viewport-box:focus-visible,
-    .tour-viewport-box.scene-focused {
+    #viewport-box:focus-visible,
+    #viewport-box.scene-focused {
       border-color: rgba(14, 165, 233, 0.45);
       box-shadow: 0 25px 70px -10px rgba(0, 0, 0, 0.85), 0 0 0 2px rgba(14, 165, 233, 0.3);
     }
 
-    .tour-viewport-box:fullscreen,
-    .tour-viewport-box:-webkit-full-screen {
+    #viewport-box:fullscreen,
+    #viewport-box:-webkit-full-screen {
       max-width: 100vw !important;
       max-height: 100vh !important;
       width: 100vw !important;
@@ -130,30 +182,24 @@ export async function generateStandaloneHTML(
       box-shadow: none !important;
     }
 
-    :root {
-      --info-hotspot-color: ${project.settings?.infoColor || '#0ea5e9'};
-      --scene-hotspot-color: ${project.settings?.sceneColor || '#10b981'};
-      --arrow-color: ${project.settings?.arrowColor || '#ffffff'};
-    }
-
     /* Pannellum Embedded CSS */
     ${pannellumCssRaw}
 
-    /* Ocultar nome de cômodos / título dentro do visualizador 360 e mensagem Pannellum 2.5.7 do botão direito */
-    .pnlm-panorama-info,
-    .pnlm-title-box,
-    .pnlm-author-box,
-    .pnlm-compass,
-    .pnlm-about-msg,
-    .pnlm-about-menu {
+    /* Ocultar elementos desnecessários do Pannellum dentro do box */
+    #viewport-box .pnlm-panorama-info,
+    #viewport-box .pnlm-title-box,
+    #viewport-box .pnlm-author-box,
+    #viewport-box .pnlm-compass,
+    #viewport-box .pnlm-about-msg,
+    #viewport-box .pnlm-about-menu {
       display: none !important;
       visibility: hidden !important;
       opacity: 0 !important;
       pointer-events: none !important;
     }
 
-    /* Custom Hotspots Styles */
-    .pnlm-hotspot-base {
+    /* Custom Hotspots Styles escopados a #viewport-box */
+    #viewport-box .pnlm-hotspot-base {
       position: absolute !important;
       top: 0 !important;
       left: 0 !important;
@@ -163,7 +209,7 @@ export async function generateStandaloneHTML(
       pointer-events: auto !important;
     }
 
-    .custom-hotspot-info {
+    #viewport-box .custom-hotspot-info {
       width: 44px !important;
       height: 44px !important;
       border-radius: 9999px !important;
@@ -180,7 +226,7 @@ export async function generateStandaloneHTML(
       pointer-events: auto !important;
       transition: background-color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, filter 0.2s ease !important;
     }
-    .custom-hotspot-info::after {
+    #viewport-box .custom-hotspot-info::after {
       content: "i";
       font-family: serif;
       font-weight: 700;
@@ -191,16 +237,16 @@ export async function generateStandaloneHTML(
       display: block;
       transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .custom-hotspot-info:hover {
+    #viewport-box .custom-hotspot-info:hover {
       filter: brightness(1.15) !important;
       border-color: #f0f9ff !important;
       box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.35), 0 8px 24px rgba(0, 0, 0, 0.5) !important;
     }
-    .custom-hotspot-info:hover::after {
+    #viewport-box .custom-hotspot-info:hover::after {
       transform: scale(1.22);
     }
 
-    .custom-hotspot-scene {
+    #viewport-box .custom-hotspot-scene {
       width: 48px !important;
       height: 48px !important;
       border-radius: 9999px !important;
@@ -217,7 +263,7 @@ export async function generateStandaloneHTML(
       pointer-events: auto !important;
       transition: background-color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, filter 0.2s ease !important;
     }
-    .custom-hotspot-scene::after {
+    #viewport-box .custom-hotspot-scene::after {
       content: "➔";
       font-size: 22px;
       color: var(--arrow-color, #ffffff) !important;
@@ -227,18 +273,18 @@ export async function generateStandaloneHTML(
       transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    /* Variações de direção de seta */
-    .arrow-right::after { content: "➔" !important; }
-    .arrow-left::after { content: "⬅" !important; }
-    .arrow-up::after { content: "⬆" !important; }
-    .arrow-down::after { content: "⬇" !important; }
-    .arrow-up-right::after { content: "↗" !important; }
-    .arrow-up-left::after { content: "↖" !important; }
-    .arrow-compass::after { content: "🧭" !important; font-size: 20px !important; }
-    .arrow-door::after { content: "🚪" !important; font-size: 20px !important; }
+    /* Variações de direção de seta escopadas estritamente a #viewport-box */
+    #viewport-box .custom-hotspot-scene.arrow-right::after { content: "➔" !important; }
+    #viewport-box .custom-hotspot-scene.arrow-left::after { content: "⬅" !important; }
+    #viewport-box .custom-hotspot-scene.arrow-up::after { content: "⬆" !important; }
+    #viewport-box .custom-hotspot-scene.arrow-down::after { content: "⬇" !important; }
+    #viewport-box .custom-hotspot-scene.arrow-up-right::after { content: "↗" !important; }
+    #viewport-box .custom-hotspot-scene.arrow-up-left::after { content: "↖" !important; }
+    #viewport-box .custom-hotspot-scene.arrow-compass::after { content: "🧭" !important; font-size: 20px !important; }
+    #viewport-box .custom-hotspot-scene.arrow-door::after { content: "🚪" !important; font-size: 20px !important; }
 
     /* Efeito de piscar / pulsar suavemente */
-    .hotspot-pulse {
+    #viewport-box .hotspot-pulse {
       animation: gentle-glow 2.2s infinite ease-in-out !important;
     }
 
@@ -257,12 +303,12 @@ export async function generateStandaloneHTML(
       }
     }
 
-    .custom-hotspot-scene:hover {
+    #viewport-box .custom-hotspot-scene:hover {
       filter: brightness(1.15) !important;
       border-color: #ecfdf5 !important;
       box-shadow: 0 0 0 7px rgba(255, 255, 255, 0.4), 0 8px 26px rgba(0, 0, 0, 0.55) !important;
     }
-    .custom-hotspot-scene:hover::after {
+    #viewport-box .custom-hotspot-scene:hover::after {
       transform: scale(1.22) !important;
     }
 
@@ -272,7 +318,7 @@ export async function generateStandaloneHTML(
       100% { box-shadow: 0 4px 14px rgba(16, 185, 129, 0.6), 0 0 0 0 rgba(16, 185, 129, 0); }
     }
 
-    div.pnlm-tooltip span {
+    #viewport-box div.pnlm-tooltip span {
       visibility: hidden !important;
       opacity: 0 !important;
       position: absolute !important;
@@ -299,14 +345,14 @@ export async function generateStandaloneHTML(
       transition: opacity 0.2s ease, visibility 0.2s ease !important;
     }
 
-    div.pnlm-tooltip:hover span,
-    div.pnlm-tooltip.pnlm-tooltip-active span {
+    #viewport-box div.pnlm-tooltip:hover span,
+    #viewport-box div.pnlm-tooltip.pnlm-tooltip-active span {
       visibility: visible !important;
       opacity: 1 !important;
     }
 
-    /* Container */
-    #panorama {
+    /* Container 360 */
+    #viewport-box #panorama {
       width: 100%;
       height: 100%;
       position: absolute;
@@ -316,7 +362,7 @@ export async function generateStandaloneHTML(
     }
 
     /* Header Bar */
-    .tour-header {
+    #viewport-box .tour-header {
       position: absolute;
       top: 16px;
       left: 16px;
@@ -327,7 +373,7 @@ export async function generateStandaloneHTML(
       justify-content: space-between;
       pointer-events: none;
     }
-    .tour-branding {
+    #viewport-box .tour-branding {
       pointer-events: auto;
       background: rgba(15, 23, 42, 0.85);
       backdrop-filter: blur(12px);
@@ -337,7 +383,7 @@ export async function generateStandaloneHTML(
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
       max-width: min(480px, calc(100% - 32px));
     }
-    .tour-title {
+    #viewport-box .tour-title {
       font-size: 16px;
       font-weight: 700;
       color: #ffffff;
@@ -345,7 +391,7 @@ export async function generateStandaloneHTML(
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .tour-meta {
+    #viewport-box .tour-meta {
       font-size: 12px;
       color: #94a3b8;
       margin-top: 2px;
@@ -355,7 +401,7 @@ export async function generateStandaloneHTML(
     }
 
     /* Controls Strip */
-    .controls-strip {
+    #viewport-box .controls-strip {
       position: absolute;
       bottom: 24px;
       right: 24px;
@@ -364,7 +410,7 @@ export async function generateStandaloneHTML(
       flex-direction: column;
       gap: 10px;
     }
-    .ctrl-btn {
+    #viewport-box .ctrl-btn {
       width: 44px;
       height: 44px;
       border-radius: 10px;
@@ -380,14 +426,14 @@ export async function generateStandaloneHTML(
       transition: all 0.2s ease;
       font-size: 18px;
     }
-    .ctrl-btn:hover {
+    #viewport-box .ctrl-btn:hover {
       background: rgba(30, 41, 59, 0.95);
       border-color: rgba(255, 255, 255, 0.25);
       transform: translateY(-2px);
     }
 
     /* Bottom Room Navigator */
-    .room-navigator {
+    #viewport-box .room-navigator {
       position: absolute;
       bottom: 24px;
       left: 50%;
@@ -404,7 +450,7 @@ export async function generateStandaloneHTML(
       max-width: calc(100% - 32px);
       overflow-x: auto;
     }
-    .room-pill {
+    #viewport-box .room-pill {
       background: transparent;
       border: none;
       color: #94a3b8;
@@ -419,18 +465,18 @@ export async function generateStandaloneHTML(
       align-items: center;
       gap: 6px;
     }
-    .room-pill:hover {
+    #viewport-box .room-pill:hover {
       color: #f8fafc;
       background: rgba(255, 255, 255, 0.06);
     }
-    .room-pill.active {
+    #viewport-box .room-pill.active {
       color: #ffffff;
       background: #0284c7;
       box-shadow: 0 2px 10px rgba(2, 132, 199, 0.4);
     }
 
     /* Educational Info Modal */
-    .edu-modal-backdrop {
+    #viewport-box .edu-modal-backdrop {
       position: absolute;
       top: 0;
       left: 0;
@@ -449,35 +495,35 @@ export async function generateStandaloneHTML(
       transition: opacity 0.25s ease;
       border-radius: inherit;
     }
-    .edu-modal-backdrop.open {
+    #viewport-box .edu-modal-backdrop.open {
       opacity: 1;
       pointer-events: auto;
     }
 
     /* Variações de Desfoque de Fundo */
-    .edu-modal-backdrop.blur-none {
+    #viewport-box .edu-modal-backdrop.blur-none {
       backdrop-filter: none !important;
       -webkit-backdrop-filter: none !important;
       background: rgba(15, 23, 42, 0.45) !important;
     }
-    .edu-modal-backdrop.blur-low {
+    #viewport-box .edu-modal-backdrop.blur-low {
       backdrop-filter: blur(4px) !important;
       -webkit-backdrop-filter: blur(4px) !important;
       background: rgba(15, 23, 42, 0.55) !important;
     }
-    .edu-modal-backdrop.blur-medium {
+    #viewport-box .edu-modal-backdrop.blur-medium {
       backdrop-filter: blur(12px) !important;
       -webkit-backdrop-filter: blur(12px) !important;
       background: rgba(15, 23, 42, 0.72) !important;
     }
-    .edu-modal-backdrop.blur-high {
+    #viewport-box .edu-modal-backdrop.blur-high {
       backdrop-filter: blur(24px) !important;
       -webkit-backdrop-filter: blur(24px) !important;
       background: rgba(15, 23, 42, 0.85) !important;
     }
 
     /* Quadro do Modal */
-    .edu-modal-card {
+    #viewport-box .edu-modal-card {
       border-radius: 18px;
       width: 100%;
       max-width: min(620px, calc(100% - 24px));
@@ -486,87 +532,87 @@ export async function generateStandaloneHTML(
       transform: scale(0.94);
       transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease, border-color 0.2s ease;
     }
-    .edu-modal-backdrop.open .edu-modal-card {
+    #viewport-box .edu-modal-backdrop.open .edu-modal-card {
       transform: scale(1);
     }
 
     /* Tema Claro (Padrão) */
-    .edu-modal-card.theme-light,
-    .edu-modal-card {
+    #viewport-box .edu-modal-card.theme-light,
+    #viewport-box .edu-modal-card {
       background: #ffffff;
       border: 1px solid #e2e8f0;
       color: #1e293b;
       box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.35);
     }
-    .edu-modal-card.theme-light .edu-modal-header,
-    .edu-modal-card .edu-modal-header {
+    #viewport-box .edu-modal-card.theme-light .edu-modal-header,
+    #viewport-box .edu-modal-card .edu-modal-header {
       border-bottom: 1px solid #e2e8f0;
     }
-    .edu-modal-card.theme-light .edu-modal-title,
-    .edu-modal-card .edu-modal-title {
+    #viewport-box .edu-modal-card.theme-light .edu-modal-title,
+    #viewport-box .edu-modal-card .edu-modal-title {
       color: #0f172a;
     }
-    .edu-modal-card.theme-light .edu-close-btn,
-    .edu-modal-card .edu-close-btn {
+    #viewport-box .edu-modal-card.theme-light .edu-close-btn,
+    #viewport-box .edu-modal-card .edu-close-btn {
       color: #64748b;
       background: rgba(0, 0, 0, 0.05);
     }
-    .edu-modal-card.theme-light .edu-close-btn:hover,
-    .edu-modal-card .edu-close-btn:hover {
+    #viewport-box .edu-modal-card.theme-light .edu-close-btn:hover,
+    #viewport-box .edu-modal-card .edu-close-btn:hover {
       background: rgba(0, 0, 0, 0.1);
       color: #0f172a;
     }
-    .edu-modal-card.theme-light .edu-modal-text,
-    .edu-modal-card .edu-modal-text {
+    #viewport-box .edu-modal-card.theme-light .edu-modal-text,
+    #viewport-box .edu-modal-card .edu-modal-text {
       color: #334155;
     }
-    .edu-modal-card.theme-light .edu-modal-img,
-    .edu-modal-card .edu-modal-img {
+    #viewport-box .edu-modal-card.theme-light .edu-modal-img,
+    #viewport-box .edu-modal-card .edu-modal-img {
       border: 1px solid #e2e8f0;
       background: #f8fafc;
     }
 
     /* Tema Escuro */
-    .edu-modal-card.theme-dark {
+    #viewport-box .edu-modal-card.theme-dark {
       background: #0f172a !important;
       border: 1px solid #334155 !important;
       color: #f8fafc !important;
       box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.75) !important;
     }
-    .edu-modal-card.theme-dark .edu-modal-header {
+    #viewport-box .edu-modal-card.theme-dark .edu-modal-header {
       border-bottom: 1px solid #1e293b !important;
     }
-    .edu-modal-card.theme-dark .edu-modal-title {
+    #viewport-box .edu-modal-card.theme-dark .edu-modal-title {
       color: #ffffff !important;
     }
-    .edu-modal-card.theme-dark .edu-close-btn {
+    #viewport-box .edu-modal-card.theme-dark .edu-close-btn {
       color: #94a3b8 !important;
       background: rgba(255, 255, 255, 0.08) !important;
     }
-    .edu-modal-card.theme-dark .edu-close-btn:hover {
+    #viewport-box .edu-modal-card.theme-dark .edu-close-btn:hover {
       background: rgba(255, 255, 255, 0.16) !important;
       color: #ffffff !important;
     }
-    .edu-modal-card.theme-dark .edu-modal-text {
+    #viewport-box .edu-modal-card.theme-dark .edu-modal-text {
       color: #cbd5e1 !important;
     }
-    .edu-modal-card.theme-dark .edu-modal-img {
+    #viewport-box .edu-modal-card.theme-dark .edu-modal-img {
       border: 1px solid rgba(255, 255, 255, 0.1) !important;
       background: #020617 !important;
     }
 
-    .edu-modal-header {
+    #viewport-box .edu-modal-header {
       padding: 20px 24px 14px 24px;
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
     }
-    .edu-modal-title {
+    #viewport-box .edu-modal-title {
       font-size: 20px;
       font-weight: 700;
       line-height: 1.3;
     }
-    .edu-close-btn {
+    #viewport-box .edu-close-btn {
       border: none;
       width: 34px;
       height: 34px;
@@ -580,23 +626,23 @@ export async function generateStandaloneHTML(
       margin-left: 12px;
       flex-shrink: 0;
     }
-    .edu-modal-body {
+    #viewport-box .edu-modal-body {
       padding: 20px 24px 24px 24px;
     }
-    .edu-modal-img {
+    #viewport-box .edu-modal-img {
       width: 100%;
       border-radius: 12px;
       margin-bottom: 18px;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
     }
-    .edu-modal-text {
+    #viewport-box .edu-modal-text {
       font-size: 15px;
       line-height: 1.65;
       white-space: pre-wrap;
     }
   </style>
 </head>
-<body>
+<body class="vtour-body">
   <!-- Delimited Viewport Box -->
   <div class="tour-viewport-box" id="viewport-box" tabindex="0" role="region" aria-label="Visualizador Tour Virtual 360">
     <!-- Container 360 -->
@@ -688,24 +734,35 @@ export async function generateStandaloneHTML(
   <!-- Runtime Player do Tour -->
   <script>
     (function() {
+      // Detecção de incorporação por iframe para adaptar o layout sem bordas redundantes
+      try {
+        if (window.self !== window.top) {
+          if (document.body) document.body.classList.add('vtour-in-iframe');
+          if (document.documentElement) document.documentElement.classList.add('vtour-in-iframe');
+        }
+      } catch(e) {
+        if (document.body) document.body.classList.add('vtour-in-iframe');
+      }
+
       const tourData = ${serializedProject};
       let currentViewer = null;
       let currentSceneId = tourData.initialSceneId || (tourData.scenes[0] && tourData.scenes[0].id);
 
-      // Elementos do DOM
-      const modal = document.getElementById('edu-modal');
-      const modalHeader = document.querySelector('.edu-modal-header');
-      const modalBody = document.querySelector('.edu-modal-body');
-      const modalTitle = document.getElementById('modal-title');
-      const modalImage = document.getElementById('modal-image');
-      const modalText = document.getElementById('modal-text');
-      const modalCloseBtn = document.getElementById('modal-close-btn');
-      const modalCloseOverlay = document.getElementById('modal-close-overlay');
-      const roomNav = document.getElementById('room-nav');
-      const btnFullscreen = document.getElementById('btn-fullscreen');
-      const btnZoomIn = document.getElementById('btn-zoom-in');
-      const btnZoomOut = document.getElementById('btn-zoom-out');
-      const btnHome = document.getElementById('btn-home');
+      // Elementos do DOM estritamente limitados ao container #viewport-box
+      const root = document.getElementById('viewport-box') || document;
+      const modal = root.querySelector('#edu-modal');
+      const modalHeader = root.querySelector('.edu-modal-header');
+      const modalBody = root.querySelector('.edu-modal-body');
+      const modalTitle = root.querySelector('#modal-title');
+      const modalImage = root.querySelector('#modal-image');
+      const modalText = root.querySelector('#modal-text');
+      const modalCloseBtn = root.querySelector('#modal-close-btn');
+      const modalCloseOverlay = root.querySelector('#modal-close-overlay');
+      const roomNav = root.querySelector('#room-nav');
+      const btnFullscreen = root.querySelector('#btn-fullscreen');
+      const btnZoomIn = root.querySelector('#btn-zoom-in');
+      const btnZoomOut = root.querySelector('#btn-zoom-out');
+      const btnHome = root.querySelector('#btn-home');
 
       function openModal(hotspot) {
         if (!hotspot) return;
@@ -770,7 +827,9 @@ export async function generateStandaloneHTML(
         });
       }
       document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') closeModal();
+        if (e.key === 'Escape' && modal && modal.classList.contains('open')) {
+          closeModal();
+        }
       });
 
       // Montar Cenas para o Pannellum
@@ -840,7 +899,8 @@ export async function generateStandaloneHTML(
       });
 
       // Inicializar Pannellum
-      currentViewer = pannellum.viewer('panorama', {
+      var panoTarget = root.querySelector('#panorama') || 'panorama';
+      currentViewer = pannellum.viewer(panoTarget, {
         default: {
           firstScene: currentSceneId,
           sceneFadeDuration: 800,
@@ -855,7 +915,7 @@ export async function generateStandaloneHTML(
         scenes: pnlmScenes
       });
 
-      var panoEl = document.getElementById('panorama');
+      var panoEl = root.querySelector('#panorama');
       if (panoEl) {
         panoEl.addEventListener('contextmenu', function(e) {
           e.preventDefault();
@@ -916,21 +976,23 @@ export async function generateStandaloneHTML(
       btnZoomOut.addEventListener('click', function() {
         currentViewer.setHfov(currentViewer.getHfov() + 12);
       });
-      btnFullscreen.addEventListener('click', function() {
-        var box = document.getElementById('viewport-box') || document.documentElement;
-        var isFs = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-        if (!isFs) {
-          var req = box.requestFullscreen || box.webkitRequestFullscreen || box.mozRequestFullScreen || box.msRequestFullscreen;
-          if (req) {
-            req.call(box).catch(function() {});
+      if (btnFullscreen) {
+        btnFullscreen.addEventListener('click', function() {
+          var box = root;
+          var isFs = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+          if (!isFs) {
+            var req = box.requestFullscreen || box.webkitRequestFullscreen || box.mozRequestFullScreen || box.msRequestFullscreen;
+            if (req) {
+              req.call(box).catch(function() {});
+            }
+          } else {
+            var exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+            if (exit) {
+              exit.call(document).catch(function() {});
+            }
           }
-        } else {
-          var exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
-          if (exit) {
-            exit.call(document).catch(function() {});
-          }
-        }
-      });
+        });
+      }
 
       function handleResize() {
         if (currentViewer && currentViewer.resize) {
@@ -946,7 +1008,7 @@ export async function generateStandaloneHTML(
         setTimeout(handleResize, 150);
       });
 
-      var viewportBox = document.getElementById('viewport-box');
+      var viewportBox = root;
       if (viewportBox) {
         viewportBox.addEventListener('mouseenter', function() {
           viewportBox.classList.add('scene-focused');

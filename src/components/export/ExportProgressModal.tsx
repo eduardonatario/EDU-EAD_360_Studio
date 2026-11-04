@@ -84,6 +84,10 @@ export const ExportProgressModal: React.FC<ExportProgressModalProps> = ({
           </div>
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400" />
+            <span>Código 100% isolado (seguro para embed/iframe em qualquer site)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400" />
             <span>Funciona offline e em duplo clique local (sem CORS)</span>
           </div>
         </div>
