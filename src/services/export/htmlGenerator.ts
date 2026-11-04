@@ -47,10 +47,20 @@ export async function generateStandaloneHTML(
       margin: 0;
       padding: 0;
     }
-    html, body {
+    html {
       width: 100%;
       height: 100%;
-      overflow: hidden;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scroll-behavior: smooth;
+    }
+    body {
+      width: 100%;
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       background: #090d16;
       color: #f8fafc;
@@ -59,7 +69,7 @@ export async function generateStandaloneHTML(
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 16px;
+      padding: 40px 16px;
       box-sizing: border-box;
       background: #06090e;
       ` : ''}
@@ -70,6 +80,8 @@ export async function generateStandaloneHTML(
       position: relative;
       overflow: hidden;
       background: #000000;
+      margin: auto;
+      outline: none;
       ${isDelimitedBox ? `
       border-radius: 14px;
       border: 1.5px solid rgba(255, 255, 255, 0.15);
@@ -79,25 +91,31 @@ export async function generateStandaloneHTML(
       aspect-ratio: 16 / 9;
       width: 100%;
       height: auto;
-      max-width: min(calc(100vw - 32px), calc((100vh - 32px) * (16 / 9)), 1920px);
-      max-height: min(calc(100vh - 32px), calc((100vw - 32px) * (9 / 16)), 1080px);
+      max-width: min(calc(100vw - 32px), calc((100vh - 64px) * (16 / 9)), 1920px);
+      max-height: min(calc(100vh - 64px), calc((100vw - 32px) * (9 / 16)), 1080px);
       ` : viewportFormat === '9:16' ? `
       aspect-ratio: 9 / 16;
       height: 100%;
       width: auto;
-      max-height: min(calc(100vh - 32px), 1920px);
-      max-width: min(calc(100vw - 32px), calc((100vh - 32px) * (9 / 16)), 1080px);
+      max-height: min(calc(100vh - 64px), 1920px);
+      max-width: min(calc(100vw - 32px), calc((100vh - 64px) * (9 / 16)), 1080px);
       ` : `
       aspect-ratio: ${customWidth} / ${customHeight};
       width: 100%;
       height: auto;
-      max-width: min(calc(100vw - 32px), ${customWidth}px, calc((100vh - 32px) * (${customWidth} / ${customHeight})));
-      max-height: min(calc(100vh - 32px), ${customHeight}px, calc((100vw - 32px) * (${customHeight} / ${customWidth})));
+      max-width: min(calc(100vw - 32px), ${customWidth}px, calc((100vh - 64px) * (${customWidth} / ${customHeight})));
+      max-height: min(calc(100vh - 64px), ${customHeight}px, calc((100vw - 32px) * (${customHeight} / ${customWidth})));
       `}
       ` : `
       width: 100%;
       height: 100%;
       `}
+    }
+
+    .tour-viewport-box:focus-visible,
+    .tour-viewport-box.scene-focused {
+      border-color: rgba(14, 165, 233, 0.45);
+      box-shadow: 0 25px 70px -10px rgba(0, 0, 0, 0.85), 0 0 0 2px rgba(14, 165, 233, 0.3);
     }
 
     .tour-viewport-box:fullscreen,
@@ -106,6 +124,7 @@ export async function generateStandaloneHTML(
       max-height: 100vh !important;
       width: 100vw !important;
       height: 100vh !important;
+      margin: 0 !important;
       border-radius: 0 !important;
       border: none !important;
       box-shadow: none !important;
@@ -579,7 +598,7 @@ export async function generateStandaloneHTML(
 </head>
 <body>
   <!-- Delimited Viewport Box -->
-  <div class="tour-viewport-box" id="viewport-box">
+  <div class="tour-viewport-box" id="viewport-box" tabindex="0" role="region" aria-label="Visualizador Tour Virtual 360">
     <!-- Container 360 -->
     <div id="panorama"></div>
 
@@ -926,6 +945,22 @@ export async function generateStandaloneHTML(
       document.addEventListener('webkitfullscreenchange', function() {
         setTimeout(handleResize, 150);
       });
+
+      var viewportBox = document.getElementById('viewport-box');
+      if (viewportBox) {
+        viewportBox.addEventListener('mouseenter', function() {
+          viewportBox.classList.add('scene-focused');
+        });
+        viewportBox.addEventListener('mouseleave', function() {
+          viewportBox.classList.remove('scene-focused');
+        });
+        viewportBox.addEventListener('focus', function() {
+          viewportBox.classList.add('scene-focused');
+        });
+        viewportBox.addEventListener('blur', function() {
+          viewportBox.classList.remove('scene-focused');
+        });
+      }
     })();
   </script>
 </body>

@@ -621,26 +621,32 @@ export default function App() {
         )}
 
         {/* Visualizador 360 Central (Pannellum WebGL Canvas) */}
-        <main className="flex-1 h-full relative overflow-hidden bg-slate-950 flex items-center justify-center p-0">
-          <div
-            className={`relative overflow-hidden transition-all duration-300 flex items-center justify-center ${
-              (project.settings?.viewportFormat ?? '16:9') === '16:9'
-                ? 'aspect-[16/9] w-full max-w-[1920px] max-h-[1080px] h-auto shadow-2xl rounded-xl border border-slate-800'
-                : project.settings?.viewportFormat === '9:16'
-                ? 'aspect-[9/16] h-full max-h-[1920px] max-w-[1080px] w-auto shadow-2xl rounded-xl border border-slate-800'
-                : project.settings?.viewportFormat === 'custom'
-                ? 'shadow-2xl rounded-xl border border-slate-800 max-w-full max-h-full'
-                : 'w-full h-full'
-            }`}
-            style={
-              project.settings?.viewportFormat === 'custom'
-                ? {
-                    width: `${project.settings.customWidth || 1920}px`,
-                    height: `${project.settings.customHeight || 1080}px`,
-                  }
-                : undefined
-            }
-          >
+        <main
+          className={`flex-1 h-full relative overflow-y-auto overflow-x-hidden bg-slate-950 flex flex-col items-center scroll-smooth ${
+            (project.settings?.viewportFormat ?? '16:9') !== 'free' ? 'p-4 md:p-8' : 'p-0'
+          }`}
+        >
+          <div className="min-h-full w-full flex items-center justify-center my-auto">
+            <div
+              tabIndex={0}
+              className={`relative overflow-hidden transition-all duration-300 flex items-center justify-center outline-none focus:ring-2 focus:ring-sky-500/50 ${
+                (project.settings?.viewportFormat ?? '16:9') === '16:9'
+                  ? 'aspect-[16/9] w-full max-w-[1920px] max-h-[1080px] h-auto shadow-2xl rounded-xl border border-slate-800'
+                  : project.settings?.viewportFormat === '9:16'
+                  ? 'aspect-[9/16] h-full max-h-[1920px] max-w-[1080px] w-auto shadow-2xl rounded-xl border border-slate-800'
+                  : project.settings?.viewportFormat === 'custom'
+                  ? 'shadow-2xl rounded-xl border border-slate-800 max-w-full max-h-full'
+                  : 'w-full h-full'
+              }`}
+              style={
+                project.settings?.viewportFormat === 'custom'
+                  ? {
+                      width: `${project.settings.customWidth || 1920}px`,
+                      height: `${project.settings.customHeight || 1080}px`,
+                    }
+                  : undefined
+              }
+            >
             <PannellumViewer
               scenes={project.scenes}
               activeSceneId={activeScene?.id || ''}
@@ -669,7 +675,8 @@ export default function App() {
               />
             )}
           </div>
-        </main>
+        </div>
+      </main>
 
         {/* Painel Direito: Inspetor / Editor de Hotspot quando selecionado */}
         {viewMode === 'editor' && selectedHotspot && activeScene && (
